@@ -40,15 +40,15 @@ const HarmonicHexagon: React.FC<{
     const tIn = { duration: speed.inhale, ease: [0.42, 0, 0.58, 1] as [number, number, number, number] };
     const tOut = { duration: speed.exhale, ease: [0.42, 0, 0.58, 1] as [number, number, number, number] };
     
-    // Staggered Layers
+    // Staggered Layers - INCREASED AMPLITUDE for visibility
     const layerVariants = {
         inhale: (i: number) => ({
-            scale: 1 + (i * 0.12), // Layers expand outward
-            opacity: 0.6 - (i * 0.15),
-            transition: { ...tIn, delay: i * 0.06 } // Stagger delay
+            scale: 1 + (i * 0.18), // Was 0.12, increased for stronger breath effect
+            opacity: 0.7 - (i * 0.15),
+            transition: { ...tIn, delay: i * 0.06 } 
         }),
         exhale: (i: number) => ({
-            scale: 0.75 + (i * 0.04), // Layers collapse
+            scale: 0.7 + (i * 0.04), // Was 0.75, decreased for tighter collapse
             opacity: 0.1 + (i * 0.1),
             transition: { ...tOut, delay: i * 0.04 }
         }),
@@ -59,14 +59,14 @@ const HarmonicHexagon: React.FC<{
     // Text Sync
     const textVariants = {
         inhale: { 
-            scale: 1.5, 
+            scale: 1.6, 
             opacity: 1, 
             filter: "blur(0px)",
-            textShadow: `0 0 20px ${color}80`,
+            textShadow: `0 0 30px ${color}80`,
             transition: tIn 
         },
         exhale: { 
-            scale: 0.7, 
+            scale: 0.6, 
             opacity: 0.4, 
             filter: "blur(1px)",
             textShadow: `0 0 0px ${color}00`,
@@ -173,9 +173,17 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
         return () => { clearTimeout(t1); clearTimeout(t2); };
     }, [speedKey, phase]);
 
+    // --- HELPER FOR RETENTION START ---
+    // Moved outside to be accessible by auto-transition logic
+    const startRetention = useCallback(() => {
+        setPhase('RETENTION');
+        setTimerVal(0);
+        setBreathAnimState('static');
+    }, []);
+
     // --- BREATHING LOGIC (The Core Loop) ---
     // We use a separate state 'breathAnimState' to drive the Hexagon during the active phase
-    const [breathAnimState, setBreathAnimState] = useState<'inhale'|'exhale'>('inhale');
+    const [breathAnimState, setBreathAnimState] = useState<'inhale'|'exhale'|'static'>('static');
 
     useEffect(() => {
         if (phase !== 'BREATHING') return;
@@ -186,25 +194,37 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
         const cycle = async () => {
              // 1. INHALE
              setBreathAnimState('inhale');
-             await new Promise<void>(r => setTimeout(r, s.inhale * 1000));
+             // Fix: wrap r in closure to avoid passing 0 arguments to a function expecting 1 (resolve)
+             await new Promise<void>(r => setTimeout(() => r(), s.inhale * 1000));
              if (!isMounted || phase !== 'BREATHING') return;
 
              // 2. EXHALE
              setBreathAnimState('exhale');
-             await new Promise<void>(r => setTimeout(r, s.exhale * 1000));
+             // Fix: wrap r in closure to avoid passing 0 arguments to a function expecting 1 (resolve)
+             await new Promise<void>(r => setTimeout(() => r(), s.exhale * 1000));
              if (!isMounted || phase !== 'BREATHING') return;
 
-             // 3. COUNT UPDATE
-             setCurrentBreath(prev => prev + 1);
-             // Note: We do NOT auto-stop at target. WHM usually allows user to go deeper.
-             // Visual guidance stops expanding, but count continues until double tap.
+             // 3. COUNT UPDATE & AUTO-TRANSITION CHECK
+             setCurrentBreath(prev => {
+                 const nextCount = prev + 1;
+                 // AUTO TRANSITION LOGIC
+                 if (nextCount > breathsTarget) {
+                     // Trigger retention immediately after the last exhale
+                     startRetention();
+                     return prev; 
+                 }
+                 return nextCount;
+             });
              
-             cycle();
+             // If we just transitioned, this cycle loop naturally dies due to phase dependency change
+             if (phase === 'BREATHING') {
+                 cycle();
+             }
         };
 
         cycle();
         return () => { isMounted = false; };
-    }, [phase, speedKey]);
+    }, [phase, speedKey, breathsTarget, startRetention]);
 
     // --- STOPWATCH & COUNTDOWN LOGIC (RAF) ---
     const tick = useCallback((time: number) => {
@@ -227,7 +247,7 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
             });
         }
         reqRef.current = requestAnimationFrame(tick);
-    }, [phase]); // Dependency on phase ensures handleAutoTransition has correct closure
+    }, [phase]); 
 
     // Auto Transition Logic used inside Tick
     const handleAutoTransition = () => {
@@ -273,8 +293,8 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
 
     const handleDoubleTap = () => {
         if (phase === 'BREATHING') {
-            setPhase('RETENTION');
-            setTimerVal(0);
+            // Manual early exit to retention
+            startRetention();
         } else if (phase === 'RETENTION') {
             setPhase('RECOVERY_PREP');
             setTimerVal(3);
@@ -427,7 +447,8 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
         visState = breathAnimState;
         visLabel = currentBreath;
         visSub = visState === 'inhale' ? "ВДОХ" : "ВЫДОХ";
-        hintText = "Двойной тап для завершения";
+        // Update hint to reflect both options
+        hintText = "Двойной тап: завершить раньше";
         isClickable = true;
     } 
     else if (phase === 'RETENTION') {
@@ -493,8 +514,21 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
                      phase === 'ROUND_WAIT' ? "ОТЛИЧНО!" : ""}
                 </h2>
 
-                {/* THE HEXAGON */}
-                <div className="mt-8 transition-transform duration-500 scale-100 md:scale-125">
+                {/* THE HEXAGON - WRAPPED IN MOTION DIV FOR PUMPING EFFECT */}
+                <motion.div 
+                    className="mt-8 relative z-10"
+                    animate={
+                        phase === 'BREATHING' 
+                        ? { scale: breathAnimState === 'inhale' ? 1.2 : 0.9 }
+                        : { scale: 1 }
+                    }
+                    transition={{
+                        duration: phase === 'BREATHING' 
+                            ? (breathAnimState === 'inhale' ? SPEEDS[speedKey].inhale : SPEEDS[speedKey].exhale)
+                            : 0.5,
+                        ease: "easeInOut"
+                    }}
+                >
                     <HarmonicHexagon 
                         state={visState}
                         speed={SPEEDS[speedKey]}
@@ -503,7 +537,7 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
                         color={visColor}
                         showLayers={phase !== 'RETENTION' && phase !== 'ROUND_WAIT' && phase !== 'DONE'}
                     />
-                </div>
+                </motion.div>
 
                 {/* BOTTOM HINT */}
                 <div className="absolute bottom-[10%] w-full flex justify-center">

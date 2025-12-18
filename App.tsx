@@ -724,7 +724,7 @@ const App: React.FC = () => {
 
       {/* --- NAVBAR --- */}
       <nav className="w-full h-20 md:h-24 bg-white/70 dark:bg-[#050505]/60 backdrop-blur-2xl border-b border-gray-200/50 dark:border-white/5 sticky top-0 z-40 flex-shrink-0 transition-all duration-300">
-        <div className="w-full px-4 md:px-6 h-full flex items-center justify-between max-w-[1920px] mx-auto relative">
+        <div className="w-full px-4 md:px-6 h-full flex items-center justify-between mx-auto relative">
             
             <div className="flex items-center gap-3 cursor-pointer group relative flex-shrink-0" onClick={() => setView('library')}>
                 <div className="absolute left-8 top-1/2 -translate-y-1/2 w-32 h-32 bg-cyan-500/10 blur-[50px] rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
@@ -895,7 +895,7 @@ const App: React.FC = () => {
       </nav>
 
       {/* Main Content */}
-      <main className="w-full max-w-[1920px] mx-auto flex-grow flex flex-col relative z-10">
+      <main className="w-full mx-auto flex-grow flex flex-col relative z-10">
         
         {view === 'library' && (
             <div className="animate-fade-in p-6 md:p-16 pb-32">
@@ -1168,7 +1168,7 @@ const App: React.FC = () => {
                                  <ReactMarkdown
                                     components={{
                                         p: ({node, ...props}) => <p className="mb-5 text-gray-700 dark:text-gray-300 leading-relaxed font-light text-base md:text-lg" {...props} />,
-                                        strong: ({node, ...props}) => <span className="text-cyan-700 dark:text-zen-accent font-bold block mb-1 uppercase text-[10px] tracking-[0.1em] mt-6" {...props} />,
+                                        strong: ({node, ...props}) => <span className="text-cyan-700 dark:text-zen-accent font-bold" {...props} />,
                                         ol: ({node, ...props}) => <ol className="space-y-4 mb-8 list-decimal pl-4 text-gray-700 dark:text-gray-300 text-base md:text-lg" {...props} />,
                                         ul: ({node, ...props}) => <ul className="space-y-2 list-disc pl-5 mb-6 text-gray-700 dark:text-gray-300 marker:text-cyan-500 text-base md:text-lg" {...props} />,
                                         li: ({node, ...props}) => <li className="pl-1 mb-1" {...props} />,
