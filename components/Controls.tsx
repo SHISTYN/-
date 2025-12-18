@@ -149,8 +149,8 @@ const Controls: React.FC<ControlsProps> = ({ pattern, onChange, rounds, onRounds
               </div>
           ) : <div className="flex-1"></div>}
 
-          {/* Rounds Selector (AVAILABLE IN ALL MODES EXCEPT SIMPLE STOPWATCH) */}
-          {pattern.mode !== 'stopwatch' && (
+          {/* Rounds Selector (HIDDEN FOR WIM HOF) */}
+          {pattern.mode !== 'stopwatch' && pattern.mode !== 'wim-hof' && (
               <div className="flex items-center gap-2 bg-white/50 dark:bg-white/5 rounded-xl px-3 py-1.5 border border-gray-200 dark:border-white/5 ml-auto shadow-sm backdrop-blur-md">
                   <span className="text-[9px] font-bold uppercase text-gray-400">Раунды</span>
                   <div className="w-px h-3 bg-gray-300 dark:bg-white/10 mx-1"></div>

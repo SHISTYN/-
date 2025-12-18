@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BreathingPhase } from '../types';
 
@@ -36,13 +35,10 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
 
   // --- Progress Calculations ---
   // 1. Time Progress (Standard)
-  // For standard timer: 1 -> 0. For stopwatch: we keep ring full or specific animation.
-  let timeProgress = totalTimeForPhase > 0 ? (totalTimeForPhase - timeLeft) / totalTimeForPhase : 0;
+  const timeProgress = totalTimeForPhase > 0 ? (totalTimeForPhase - timeLeft) / totalTimeForPhase : 0;
   
-  // Override for Wim Hof Retention (Stopwatch mode) -> Always full ring (pulsing)
-  if (isWimHofRetention) {
-      timeProgress = 0; // Keep full ring
-  }
+  // 2. Breath Count Progress (Wim Hof Specific)
+  const breathProgress = isWimHofBreathing ? (currentBreath / totalBreaths) : 0;
 
   // --- Color Logic ---
   let phaseColorClass = '';
@@ -55,8 +51,8 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
           glowColor = '#22d3ee'; 
           strokeColor = '#22d3ee';
       } else if (isWimHofRetention) {
-          phaseColorClass = 'text-white'; // White for stopwatch clarity
-          glowColor = '#f97316'; // Orange glow
+          phaseColorClass = 'text-orange-500';
+          glowColor = '#f97316'; 
           strokeColor = '#f97316';
       } else if (isWimHofRecovery) {
           phaseColorClass = 'text-purple-400';
@@ -100,6 +96,7 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
   let mainValue = timeLeft.toFixed(1);
   let subText = label;
   let bottomText = "";
+  // New specific phase countdown text
   let phaseTimerText = ""; 
 
   if (mode === 'stopwatch') {
@@ -114,13 +111,16 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
           mainValue = `${currentBreath}`;
           subText = phase === BreathingPhase.Inhale ? "ВДОХ" : "ВЫДОХ";
           bottomText = `РАУНД ${currentRound} • ЦЕЛЬ: ${totalBreaths}`;
+          // Show phase time for guidance
           phaseTimerText = `${timeLeft.toFixed(1)}с`;
       } else if (isWimHofRetention) {
-          // STRICT STOPWATCH FORMAT (MM:SS)
           const m = Math.floor(timeLeft / 60);
           const s = Math.floor(timeLeft % 60);
-          mainValue = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-          
+          if (timeLeft > 60) {
+              mainValue = `${m}:${s.toString().padStart(2, '0')}`;
+          } else {
+              mainValue = timeLeft.toFixed(1);
+          }
           subText = "ЗАДЕРЖКА";
           bottomText = `РАУНД ${currentRound} • РАССЛАБЛЕНИЕ`;
       } else if (isWimHofRecovery) {
@@ -132,10 +132,11 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
            subText = label;
       }
   } else {
+      // Standard Modes: Main Value IS the countdown
       if (Number.isInteger(timeLeft)) {
           mainValue = timeLeft.toString();
       }
-      phaseTimerText = "";
+      phaseTimerText = ""; // Already main value
   }
 
   // --- Nose Logic (Legacy) ---
@@ -169,16 +170,25 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
   }
 
   // --- Visual Scaling (Breathing Animation) ---
+  // Default scale
   let scale = 1;
+  let transitionDuration = '300ms'; // Standard smoothness
 
   if (mode !== 'stopwatch') {
       if (phase === BreathingPhase.Inhale) {
+          // Expand
           scale = 1.15;
+          // Set transition to match the time left to create a continuous expansion feeling if desired, 
+          // OR keep it fixed for a pulse. For "breathing", smooth transition over the whole phase is ideal, 
+          // but complex with JS intervals. Let's do a strong CSS pulse state.
       } else if (phase === BreathingPhase.Exhale) {
+          // Contract
           scale = 0.85;
       }
       
+      // Override for WHM rapid breathing to be snappier
       if (isWimHofBreathing) {
+          transitionDuration = '100ms';
           scale = phase === BreathingPhase.Inhale ? 1.1 : 0.9;
       }
   }
@@ -191,7 +201,7 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
         
         {/* 1. Ambient Glow (Pulsing) */}
         <div 
-            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] rounded-full blur-[80px] pointer-events-none transition-all ease-out ${isWimHofRetention ? 'opacity-60 animate-pulse' : 'opacity-30'}`}
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] rounded-full blur-[80px] pointer-events-none transition-all ease-out ${isWimHofRetention ? 'opacity-50 animate-pulse' : 'opacity-30'}`}
             style={{ 
                 backgroundColor: glowColor,
                 transform: `translate(-50%, -50%) scale(${scale})`,
@@ -220,7 +230,6 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
                 stroke={theme === 'light' ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)"}
                 strokeWidth="2"
             />
-            {/* ACTIVE RING */}
             {mode !== 'stopwatch' && (
                 <circle
                     cx="100"
@@ -231,9 +240,8 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
                     strokeWidth="4" 
                     strokeLinecap="round"
                     strokeDasharray={2 * Math.PI * 98}
-                    // If Retention, keep full ring (offset 0), otherwise normal progress
-                    strokeDashoffset={isWimHofRetention ? 0 : 2 * Math.PI * 98 * (1 - timeProgress)}
-                    className={`transition-all ease-linear ${isWimHofRetention ? 'opacity-100' : 'duration-100'}`}
+                    strokeDashoffset={2 * Math.PI * 98 * (1 - timeProgress)}
+                    className="transition-all duration-100 ease-linear"
                     style={{ 
                         filter: `drop-shadow(0 0 10px ${glowColor})`
                     }}
@@ -284,13 +292,14 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
                             <span className="text-gray-500 text-xs font-mono">
                                 из {totalBreaths}
                             </span>
+                            {/* Explicit phase timer for WHM pacing */}
                             <span className="text-white/50 text-xs font-bold mt-1 bg-white/10 px-2 py-0.5 rounded">
                                 {phaseTimerText}
                             </span>
                         </div>
                     )}
                     
-                    {/* Explicit Phase Timer for Standard Modes */}
+                    {/* Explicit Phase Timer for Standard Modes (User Request) */}
                     {!isWimHof && mode !== 'stopwatch' && (
                         <div className="mt-2 text-gray-400 text-xs font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/5">
                             {phase === BreathingPhase.Inhale ? 'Вдох' : phase === BreathingPhase.Exhale ? 'Выдох' : phase === BreathingPhase.HoldIn ? 'Задержка' : phase === BreathingPhase.HoldOut ? 'Пауза' : ''}
@@ -318,6 +327,14 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
                         </div>
                     )}
                 </div>
+
+                {/* Legacy Nose Indicators */}
+                {isNoseTechnique && !isWimHof && (
+                    <>
+                        <div className={`absolute bottom-6 md:bottom-10 left-6 md:left-12 text-[8px] md:text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${closeLeft ? 'text-zen-accent opacity-100' : 'text-gray-600 opacity-30'}`}>Безымянный</div>
+                        <div className={`absolute bottom-6 md:bottom-10 right-6 md:left-auto md:right-12 text-[8px] md:text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${closeRight ? 'text-zen-accent opacity-100' : 'text-gray-600 opacity-30'}`}>Большой</div>
+                    </>
+                )}
             </div>
         </div>
     </div>
