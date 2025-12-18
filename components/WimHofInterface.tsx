@@ -194,14 +194,14 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
         const cycle = async () => {
              // 1. INHALE
              setBreathAnimState('inhale');
-             // Fix: wrap r in closure to avoid passing 0 arguments to a function expecting 1 (resolve)
-             await new Promise<void>(r => setTimeout(() => r(), s.inhale * 1000));
+             // Fix: Pass undefined to resolve Promise<void> which expects 1 argument in strict mode
+             await new Promise<void>(r => setTimeout(() => r(undefined), s.inhale * 1000));
              if (!isMounted || phase !== 'BREATHING') return;
 
              // 2. EXHALE
              setBreathAnimState('exhale');
-             // Fix: wrap r in closure to avoid passing 0 arguments to a function expecting 1 (resolve)
-             await new Promise<void>(r => setTimeout(() => r(), s.exhale * 1000));
+             // Fix: Pass undefined to resolve Promise<void> which expects 1 argument in strict mode
+             await new Promise<void>(r => setTimeout(() => r(undefined), s.exhale * 1000));
              if (!isMounted || phase !== 'BREATHING') return;
 
              // 3. COUNT UPDATE & AUTO-TRANSITION CHECK
