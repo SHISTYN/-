@@ -161,11 +161,12 @@ const Controls: React.FC<ControlsProps> = ({ pattern, onChange, rounds, onRounds
          {pattern.mode === 'stopwatch' ? (
              <div className="text-center text-xs text-gray-500 py-2">Режим секундомера</div> 
          ) : (
-             <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-6 gap-x-4">
+             <div className={`grid grid-cols-2 ${pattern.mode === 'wim-hof' ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-y-6 gap-x-4`}>
                  {pattern.mode === 'wim-hof' ? (
                      <>
                         <MinimalInput label="Вдохи" value={pattern.breathCount || 30} step={5} color="#22d3ee" onChange={(v) => onChange({ ...pattern, breathCount: v })} />
-                        <MinimalInput label="Темп" value={pattern.inhale} step={0.1} color="#94a3b8" onChange={(v) => onChange({ ...pattern, inhale: v, exhale: v * 0.6 })} />
+                        <MinimalInput label="Вдох" value={pattern.inhale} step={0.1} color="#94a3b8" onChange={(v) => onChange({ ...pattern, inhale: v })} />
+                        <MinimalInput label="Выдох" value={pattern.exhale} step={0.1} color="#94a3b8" onChange={(v) => onChange({ ...pattern, exhale: v })} />
                         <MinimalInput label="Задержка" value={pattern.holdOut} step={15} color="#F59E0B" onChange={(v) => onChange({ ...pattern, holdOut: v })} />
                         <MinimalInput label="Восстан." value={pattern.holdIn} step={5} color="#7C3AED" onChange={(v) => onChange({ ...pattern, holdIn: v })} />
                      </>

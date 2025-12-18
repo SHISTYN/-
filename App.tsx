@@ -292,12 +292,14 @@ const App: React.FC = () => {
   // --- WAKE LOCK LOGIC (KEEPS SCREEN ON) ---
   useEffect(() => {
     const requestWakeLock = async () => {
-      if ('wakeLock' in navigator) {
+      // Check for API support and visibility to avoid errors
+      if ('wakeLock' in navigator && document.visibilityState === 'visible') {
         try {
           wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
           console.log('Wake Lock is active');
         } catch (err: any) {
-          console.error(`${err.name}, ${err.message}`);
+          // Warn instead of Error to reduce console noise for non-critical permissions
+          console.warn(`Wake Lock request failed: ${err.name}, ${err.message}`);
         }
       }
     };
@@ -309,7 +311,7 @@ const App: React.FC = () => {
           wakeLockRef.current = null;
           console.log('Wake Lock released');
         } catch (err: any) {
-          console.error(`${err.name}, ${err.message}`);
+          console.warn(`Wake Lock release failed: ${err.name}, ${err.message}`);
         }
       }
     };
