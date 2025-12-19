@@ -4,6 +4,15 @@ import { DEFAULT_PATTERNS, CATEGORY_NAMES, CATEGORY_ICONS } from '../constants';
 import TechniqueCard from './library/TechniqueCard';
 import LibraryHeader from './library/LibraryHeader';
 
+// High Impact Techniques selected by Author
+const POWER_PACK_IDS = [
+    'wim-hof-session',     // The King
+    'anuloma-viloma-base', // Balance King
+    'buteyko',             // Health King
+    '4-7-8',               // Sleep King
+    'toltec-recapitulation'// Magic King
+];
+
 interface LibraryViewProps {
     selectPattern: (p: BreathingPattern) => void;
     favorites: string[];
@@ -47,6 +56,8 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
         // 3. Category Filter
         if (selectedCategory === 'Favorites') {
             patterns = patterns.filter(p => favorites.includes(p.id));
+        } else if (selectedCategory === 'AuthorChoice') {
+            patterns = patterns.filter(p => POWER_PACK_IDS.includes(p.id));
         } else if (selectedCategory !== 'All') {
             patterns = patterns.filter(p => p.category === selectedCategory);
         }
@@ -75,6 +86,18 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
                         if (tag) setSelectedCategory('All'); 
                     }}
                 />
+
+                {/* UX EXPLANATION FOR AUTHOR CHOICE */}
+                {selectedCategory === 'AuthorChoice' && (
+                    <div className="max-w-3xl mx-auto mb-10 text-center animate-fade-in">
+                        <div className="inline-block p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 backdrop-blur-md">
+                            <p className="text-amber-700 dark:text-amber-400 font-medium italic text-sm md:text-base leading-relaxed">
+                                "Эти 5 практик составляют <strong className="text-amber-600 dark:text-amber-300">Золотой Стандарт</strong>. 
+                                Они дают самый быстрый и глубокий результат. Если у вас мало времени, делайте только их."
+                            </p>
+                        </div>
+                    </div>
+                )}
                 
                 {/* GRID SECTION - Denser Layout */}
                 <div className="space-y-12">

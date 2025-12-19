@@ -27,11 +27,13 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
     selectedTag,
     onTagSelect
 }) => {
-    const allCategories = ['All', 'Favorites', ...Object.keys(CATEGORY_NAMES)];
+    // Inject 'AuthorChoice' right after 'All'
+    const allCategories = ['All', 'AuthorChoice', 'Favorites', ...Object.keys(CATEGORY_NAMES)];
 
     const getCategoryLabel = (cat: string) => {
         if (cat === 'All') return 'Все';
         if (cat === 'Favorites') return '❤️ Избранное';
+        if (cat === 'AuthorChoice') return '⚡️ Выбор Автора';
         return CATEGORY_NAMES[cat] || cat;
     };
 
@@ -92,19 +94,32 @@ const LibraryHeader: React.FC<LibraryHeaderProps> = ({
 
                 {/* Categories */}
                 <div className="flex flex-wrap justify-center gap-2 pt-2">
-                    {allCategories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => onCategoryChange(cat)}
-                            className={`px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-all border duration-300 ${
-                                selectedCategory === cat 
-                                ? 'bg-cyan-100 dark:bg-zen-accent/20 text-cyan-700 dark:text-zen-accent border-cyan-200 dark:border-zen-accent/30 shadow-glow-cyan' 
-                                : 'bg-transparent text-gray-400 dark:text-gray-500 border-transparent hover:text-gray-900 dark:hover:text-white'
-                            }`}
-                        >
-                            {getCategoryLabel(cat)}
-                        </button>
-                    ))}
+                    {allCategories.map(cat => {
+                         const isAuthorChoice = cat === 'AuthorChoice';
+                         const isSelected = selectedCategory === cat;
+                         
+                         // Special styling for Author Choice button
+                         let btnClasses = isSelected
+                            ? 'bg-cyan-100 dark:bg-zen-accent/20 text-cyan-700 dark:text-zen-accent border-cyan-200 dark:border-zen-accent/30 shadow-glow-cyan' 
+                            : 'bg-transparent text-gray-400 dark:text-gray-500 border-transparent hover:text-gray-900 dark:hover:text-white';
+                         
+                         if (isAuthorChoice && !isSelected) {
+                             btnClasses = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40';
+                         }
+                         if (isAuthorChoice && isSelected) {
+                             btnClasses = 'bg-amber-500 text-white border-amber-600 shadow-glow-gold';
+                         }
+
+                         return (
+                            <button
+                                key={cat}
+                                onClick={() => onCategoryChange(cat)}
+                                className={`px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-all border duration-300 ${btnClasses}`}
+                            >
+                                {getCategoryLabel(cat)}
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
         </header>

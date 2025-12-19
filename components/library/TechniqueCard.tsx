@@ -17,6 +17,9 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({
     isFavorite = false, 
     onToggleFavorite 
 }) => {
+    // 👑 THE KING CHECK
+    const isKing = pattern.id === 'wim-hof-session';
+
     // Helper for difficulty colors
     const getDifficultyColor = (diff: string) => {
         switch (diff) {
@@ -34,11 +37,24 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({
         }
     };
 
+    // Styling overrides for The King
+    const containerClasses = isKing 
+        ? "bg-gradient-to-br from-gray-900 to-black dark:from-[#0f0f10] dark:to-black backdrop-blur-xl rounded-[24px] p-5 cursor-pointer shadow-[0_0_25px_rgba(72,207,225,0.15)] dark:shadow-[0_0_30px_rgba(34,211,238,0.1)] hover:shadow-[0_0_40px_rgba(72,207,225,0.3)] border-2 border-cyan-400/50 dark:border-cyan-400/40 flex flex-col h-full min-h-[260px] group relative overflow-hidden"
+        : "bg-white/90 dark:bg-[#0f0f10]/80 backdrop-blur-xl rounded-[24px] p-5 cursor-pointer shadow-sm hover:shadow-2xl dark:shadow-black/50 border border-gray-200 dark:border-white/5 flex flex-col h-full min-h-[260px] group relative";
+
     return (
         <SpotlightCard 
             onClick={onClick}
-            className="bg-white/90 dark:bg-[#0f0f10]/80 backdrop-blur-xl rounded-[24px] p-5 cursor-pointer shadow-sm hover:shadow-2xl dark:shadow-black/50 border border-gray-200 dark:border-white/5 flex flex-col h-full min-h-[260px] group relative"
+            className={containerClasses}
         >
+            {/* 👑 King Effects */}
+            {isKing && (
+                <>
+                    <div className="absolute inset-0 bg-cyan-500/5 animate-pulse-slow pointer-events-none"></div>
+                    <div className="absolute -right-12 -top-12 w-24 h-24 bg-cyan-400 blur-[40px] opacity-40"></div>
+                </>
+            )}
+
             {/* Favorite Button */}
             <button 
                 onClick={handleFavoriteClick}
@@ -51,34 +67,40 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({
             </button>
 
             {/* Header: Tighter vertical spacing */}
-            <div className="flex flex-col gap-2 mb-3 pr-10">
+            <div className="flex flex-col gap-2 mb-3 pr-10 relative z-10">
                 <div className="flex items-center gap-2">
                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-transparent dark:border-white/5 shrink-0 ${getDifficultyColor(pattern.difficulty)}`}>
                         {pattern.difficulty}
                     </span>
+                    {/* 👑 MAX EFFECT BADGE */}
+                    {isKing && (
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-glow-gold animate-pulse">
+                            👑 MAX EFFECT
+                        </span>
+                    )}
                 </div>
-                <h3 className="text-lg font-display font-extrabold text-gray-900 dark:text-white group-hover:text-zen-accent dark:group-hover:text-zen-accent transition-colors leading-tight">
+                <h3 className={`text-lg font-display font-extrabold group-hover:text-zen-accent dark:group-hover:text-zen-accent transition-colors leading-tight ${isKing ? 'text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200' : 'text-gray-900 dark:text-white'}`}>
                     {pattern.name}
                 </h3>
             </div>
 
-            {/* Description: Increased line clamp for more content */}
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-4 leading-relaxed font-medium flex-grow opacity-95">
+            {/* Description */}
+            <p className={`text-sm mb-4 line-clamp-4 leading-relaxed font-medium flex-grow opacity-95 relative z-10 ${isKing ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'}`}>
                 {pattern.description}
             </p>
             
-            {/* Benefits Grid: Larger text (11px+) and icons */}
-            <div className="grid grid-cols-2 gap-2 mb-4 mt-auto">
+            {/* Benefits Grid */}
+            <div className="grid grid-cols-2 gap-2 mb-4 mt-auto relative z-10">
                 {pattern.benefits && pattern.benefits.slice(0, 4).map((b, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[11px] font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-white/5 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-white/5 overflow-hidden">
-                        <IconRenderer iconName={b.icon} size={13} className="text-cyan-600 dark:text-zen-accent shrink-0" />
+                    <div key={i} className={`flex items-center gap-2 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border overflow-hidden ${isKing ? 'bg-white/10 border-white/10 text-white' : 'text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5'}`}>
+                        <IconRenderer iconName={b.icon} size={13} className={isKing ? "text-cyan-300 shrink-0" : "text-cyan-600 dark:text-zen-accent shrink-0"} />
                         <span className="truncate">{b.label}</span>
                     </div>
                 ))}
             </div>
 
-            {/* Footer Metadata: Bigger, bolder, easier to read */}
-            <div className="flex items-center gap-2 text-sm font-bold text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-white/5 pt-3 group-hover:text-zen-accent dark:group-hover:text-zen-accent transition-colors">
+            {/* Footer Metadata */}
+            <div className={`flex items-center gap-2 text-sm font-bold border-t pt-3 group-hover:text-zen-accent dark:group-hover:text-zen-accent transition-colors relative z-10 ${isKing ? 'text-cyan-400 border-white/10' : 'text-gray-500 dark:text-gray-400 border-gray-100 dark:border-white/5'}`}>
                 <i className="far fa-clock text-xs"></i>
                 <span className="truncate">
                     {pattern.mode === 'wim-hof' ? (
@@ -90,7 +112,7 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({
                     ) : (
                         <span className="flex items-center">
                             Паттерн: 
-                            <span className="ml-2 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white">
+                            <span className={`ml-2 px-1.5 py-0.5 rounded ${isKing ? 'bg-white/10 text-white' : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white'}`}>
                                 {pattern.displayLabel ? pattern.displayLabel : `${pattern.inhale}-${pattern.holdIn}-${pattern.exhale}-${pattern.holdOut}`}
                             </span>
                         </span>
