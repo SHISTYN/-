@@ -228,6 +228,30 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
         return () => { isMounted = false; };
     }, [phase, speedKey, breathsTarget, startRetention]);
 
+    // --- AUTO TRANSITION LOGIC ---
+    // Moved before tick to avoid usage-before-definition issues
+    const handleAutoTransition = useCallback(() => {
+        if (phase === 'PREP') {
+            setPhase('BREATHING');
+            setCurrentBreath(1);
+        } else if (phase === 'RECOVERY_PREP') {
+            setPhase('RECOVERY');
+            setTimerVal(15);
+        } else if (phase === 'RECOVERY') {
+            setPhase('ROUND_WAIT');
+            setTimerVal(3);
+        } else if (phase === 'ROUND_WAIT') {
+             // Check Rounds (10 is max in UI, >10 is Infinity)
+            if (roundsTarget <= 10 && currentRound >= roundsTarget) {
+                setPhase('DONE');
+            } else {
+                setCurrentRound(r => r + 1);
+                setPhase('PREP');
+                setTimerVal(3);
+            }
+        }
+    }, [phase, roundsTarget, currentRound]);
+
     // --- STOPWATCH & COUNTDOWN LOGIC (RAF) ---
     const tick = useCallback((time: number) => {
         if (!lastTimeRef.current) lastTimeRef.current = time;
@@ -249,30 +273,7 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
             });
         }
         reqRef.current = requestAnimationFrame(tick);
-    }, [phase]); 
-
-    // Auto Transition Logic used inside Tick
-    const handleAutoTransition = () => {
-        if (phase === 'PREP') {
-            setPhase('BREATHING');
-            setCurrentBreath(1);
-        } else if (phase === 'RECOVERY_PREP') {
-            setPhase('RECOVERY');
-            setTimerVal(15);
-        } else if (phase === 'RECOVERY') {
-            setPhase('ROUND_WAIT');
-            setTimerVal(3);
-        } else if (phase === 'ROUND_WAIT') {
-             // Check Rounds (10 is max in UI, >10 is Infinity)
-            if (roundsTarget <= 10 && currentRound >= roundsTarget) {
-                setPhase('DONE');
-            } else {
-                setCurrentRound(r => r + 1);
-                setPhase('PREP');
-                setTimerVal(3);
-            }
-        }
-    };
+    }, [phase, handleAutoTransition]); 
 
     // Start/Stop RAF
     useEffect(() => {
