@@ -12,6 +12,7 @@ import { useUserProgress } from './hooks/useUserProgress'; // Import Hook
 // Heavy components are loaded only when needed to free up the main thread
 const Controls = lazy(() => import('./components/Controls'));
 const TimerVisual = lazy(() => import('./components/TimerVisual'));
+const AnulomaVilomaInterface = lazy(() => import('./components/AnulomaVilomaInterface')); // NEW IMPORT
 const WimHofInterface = lazy(() => import('./components/WimHofInterface'));
 const AnalysisModal = lazy(() => import('./components/AnalysisModal'));
 const LibraryView = lazy(() => import('./components/LibraryView'));
@@ -583,24 +584,39 @@ const App: React.FC = () => {
 
                             <div className="flex-1 flex items-center justify-center w-full px-4">
                                 <Suspense fallback={<LoadingFallback />}>
-                                    <TimerVisual 
-                                        phase={timerState.currentPhase} 
-                                        timeLeft={executionMode === 'stopwatch' ? timerState.totalSecondsElapsed : timerState.secondsRemaining}
-                                        totalTimeForPhase={
-                                            timerState.currentPhase === BreathingPhase.Inhale ? activePattern.inhale :
-                                            timerState.currentPhase === BreathingPhase.HoldIn ? activePattern.holdIn :
-                                            timerState.currentPhase === BreathingPhase.Exhale ? activePattern.exhale :
-                                            timerState.currentPhase === BreathingPhase.HoldOut ? activePattern.holdOut :
-                                            3 
-                                        }
-                                        label={timerState.currentPhase}
-                                        patternId={activePattern.id}
-                                        currentRound={timerState.currentRound}
-                                        currentBreath={timerState.currentBreath}
-                                        totalBreaths={activePattern.breathCount}
-                                        mode={executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}
-                                        theme={theme}
-                                    />
+                                    {/* CONDITIONAL RENDERING FOR ANULOMA VILOMA */}
+                                    {activePattern.id === 'anuloma-viloma-base' && executionMode !== 'stopwatch' ? (
+                                        <AnulomaVilomaInterface
+                                            phase={timerState.currentPhase}
+                                            timeLeft={timerState.secondsRemaining}
+                                            totalTime={
+                                                timerState.currentPhase === BreathingPhase.Inhale ? activePattern.inhale :
+                                                timerState.currentPhase === BreathingPhase.HoldIn ? activePattern.holdIn :
+                                                timerState.currentPhase === BreathingPhase.Exhale ? activePattern.exhale :
+                                                timerState.currentPhase === BreathingPhase.HoldOut ? activePattern.holdOut : 3
+                                            }
+                                            currentRound={timerState.currentRound}
+                                        />
+                                    ) : (
+                                        <TimerVisual 
+                                            phase={timerState.currentPhase} 
+                                            timeLeft={executionMode === 'stopwatch' ? timerState.totalSecondsElapsed : timerState.secondsRemaining}
+                                            totalTimeForPhase={
+                                                timerState.currentPhase === BreathingPhase.Inhale ? activePattern.inhale :
+                                                timerState.currentPhase === BreathingPhase.HoldIn ? activePattern.holdIn :
+                                                timerState.currentPhase === BreathingPhase.Exhale ? activePattern.exhale :
+                                                timerState.currentPhase === BreathingPhase.HoldOut ? activePattern.holdOut :
+                                                3 
+                                            }
+                                            label={timerState.currentPhase}
+                                            patternId={activePattern.id}
+                                            currentRound={timerState.currentRound}
+                                            currentBreath={timerState.currentBreath}
+                                            totalBreaths={activePattern.breathCount}
+                                            mode={executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}
+                                            theme={theme}
+                                        />
+                                    )}
                                 </Suspense>
                             </div>
 

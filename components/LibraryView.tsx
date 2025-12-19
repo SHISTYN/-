@@ -16,7 +16,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
     // Memoize filtering
-    const filteredGroupedPatterns = useMemo<Record<string, BreathingPattern[]>>(() => {
+    const filteredGroupedPatterns = useMemo(() => {
         let patterns = DEFAULT_PATTERNS;
         
         // 1. Tag Filter
