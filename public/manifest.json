@@ -1,17 +1,29 @@
 {
-  "name": "EntheoBreath",
+  "name": "EntheoBreath: Дыхание",
   "short_name": "EntheoBreath",
-  "description": "Энтеогенные дыхательные практики и таймеры сознания",
+  "description": "Библиотека дыхательных практик и таймеров. Вим Хоф, Пранаяма, AI-анализ.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#050505",
-  "theme_color": "#050505",
+  "background_color": "#0B0E11",
+  "theme_color": "#0B0E11",
   "orientation": "portrait",
   "icons": [
     {
       "src": "/favicon.svg",
       "type": "image/svg+xml",
       "sizes": "any"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ]
 }
