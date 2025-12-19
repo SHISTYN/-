@@ -93,10 +93,10 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
   }
 
   // --- Display Value Logic ---
-  let mainValue = timeLeft.toFixed(1);
+  // Use Ceiling for countdowns to prevent "0.1" and jumping. Use toFixed(1) only for stopwatch/decimals needed
+  let mainValue = "";
   let subText = label;
   let bottomText = "";
-  // New specific phase countdown text
   let phaseTimerText = ""; 
 
   if (mode === 'stopwatch') {
@@ -111,7 +111,6 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
           mainValue = `${currentBreath}`;
           subText = phase === BreathingPhase.Inhale ? "ВДОХ" : "ВЫДОХ";
           bottomText = `РАУНД ${currentRound} • ЦЕЛЬ: ${totalBreaths}`;
-          // Show phase time for guidance
           phaseTimerText = `${timeLeft.toFixed(1)}с`;
       } else if (isWimHofRetention) {
           const m = Math.floor(timeLeft / 60);
@@ -124,19 +123,17 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
           subText = "ЗАДЕРЖКА";
           bottomText = `РАУНД ${currentRound} • РАССЛАБЛЕНИЕ`;
       } else if (isWimHofRecovery) {
-          mainValue = timeLeft.toFixed(0);
+          mainValue = Math.ceil(timeLeft).toString(); // Round up
           subText = "ВОССТАНОВЛЕНИЕ";
           bottomText = "ВДОХ И ДЕРЖАТЬ";
       } else {
-           mainValue = timeLeft.toFixed(0);
+           mainValue = Math.ceil(timeLeft).toString();
            subText = label;
       }
   } else {
-      // Standard Modes: Main Value IS the countdown
-      if (Number.isInteger(timeLeft)) {
-          mainValue = timeLeft.toString();
-      }
-      phaseTimerText = ""; // Already main value
+      // Standard Modes: Countdown
+      mainValue = Math.ceil(timeLeft).toString();
+      phaseTimerText = ""; 
   }
 
   // --- Nose Logic (Legacy) ---
@@ -280,9 +277,9 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
                 {/* Top Spacer */}
                 <div className="h-6"></div>
 
-                {/* Main Value */}
+                {/* Main Value - Added font-mono for stability */}
                 <div className="flex-1 flex flex-col items-center justify-center -mt-2">
-                    <span className={`text-[18vmin] md:text-8xl font-display font-bold tabular-nums tracking-tighter ${phaseColorClass} drop-shadow-lg leading-none transition-colors duration-300`}>
+                    <span className={`text-[18vmin] md:text-8xl font-display font-bold font-mono tabular-nums tracking-tighter ${phaseColorClass} drop-shadow-lg leading-none transition-colors duration-300`}>
                         {mainValue}
                     </span>
                     
@@ -303,7 +300,7 @@ const TimerVisual: React.FC<TimerVisualProps> = ({
                     {!isWimHof && mode !== 'stopwatch' && (
                         <div className="mt-2 text-gray-400 text-xs font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full border border-white/5">
                             {phase === BreathingPhase.Inhale ? 'Вдох' : phase === BreathingPhase.Exhale ? 'Выдох' : phase === BreathingPhase.HoldIn ? 'Задержка' : phase === BreathingPhase.HoldOut ? 'Пауза' : ''}
-                            <span className="ml-2 text-white">{timeLeft.toFixed(1)}с</span>
+                            <span className="ml-2 text-white font-mono">{timeLeft.toFixed(1)}с</span>
                         </div>
                     )}
                 </div>

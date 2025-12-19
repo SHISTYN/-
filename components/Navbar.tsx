@@ -68,6 +68,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 </div>
                 
                 <div className="flex gap-2 md:gap-4 items-center relative">
+                    
                     <button 
                         onClick={toggleTheme}
                         className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-zen-accent dark:hover:text-white transition-all duration-300 active:scale-95 border border-transparent hover:border-white/10"

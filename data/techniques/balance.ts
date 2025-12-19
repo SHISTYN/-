@@ -22,7 +22,7 @@ export const balanceTechniques: BreathingPattern[] = [
   {
     id: 'anuloma-viloma-base',
     name: 'Анулома Вилома',
-    description: 'Нади Шодхана Пранаяма. Попеременное дыхание для балансировки левого (Лунного, успокаивающего) и правого (Солнечного, активного) полушарий мозга.',
+    description: 'Нади Шодхана Пранаяма. Попеременное дыхание для балансировки левого (Лунного) и правого (Солнечного) полушарий мозга. Гармонизирует логику и интуицию.',
     benefits: [
       { label: 'Баланс Инь-Ян', icon: 'Scale' },
       { label: 'Синхронизация Мозга', icon: 'BrainCircuit' },
@@ -43,7 +43,9 @@ export const balanceTechniques: BreathingPattern[] = [
     safetyWarning: 'Если пропорция 4-16-8 сложна, начните с 4-4-8 или равного дыхания.',
     contraindications: ['Сильная заложенность носа', 'Острая астма'],
     conditions: ['Сидя с прямой спиной', 'Глаза закрыты'],
-    mode: 'loop', inhale: 4, holdIn: 16, exhale: 8, holdOut: 0, category: 'Balance', difficulty: 'Средний', presets: generateAnulomaPresets()
+    mode: 'loop', inhale: 4, holdIn: 16, exhale: 8, holdOut: 0, 
+    tags: ['balance', 'harmony', 'meditation', 'stress', 'brain'],
+    category: 'Balance', difficulty: 'Средний', presets: generateAnulomaPresets()
   },
   {
     id: 'coherent',
@@ -64,7 +66,9 @@ export const balanceTechniques: BreathingPattern[] = [
     safetyWarning: 'Абсолютно безопасно и полезно для всех.',
     contraindications: ['Нет'],
     conditions: ['Ежедневно по 10-20 минут', 'При работе за компьютером'],
-    mode: 'loop', inhale: 5.5, holdIn: 0, exhale: 5.5, holdOut: 0, category: 'Balance', difficulty: 'Новичок',
+    mode: 'loop', inhale: 5.5, holdIn: 0, exhale: 5.5, holdOut: 0, 
+    tags: ['balance', 'heart', 'stress', 'work', 'focus'],
+    category: 'Balance', difficulty: 'Новичок',
     presets: [{ name: "6 вдохов/мин", inhale: 5.5, holdIn: 0, exhale: 5.5, holdOut: 0 }, { name: "5 вдохов/мин", inhale: 6, holdIn: 0, exhale: 6, holdOut: 0 }]
   },
   {
@@ -84,15 +88,17 @@ export const balanceTechniques: BreathingPattern[] = [
 2. **Вдох (Середина):** Расширьте грудную клетку.
 3. **Вдох (Верх):** Приподнимите ключицы (дополнительный вдох).
 4. **Выдох:** Опустошайте в обратном порядке: Ключицы -> Грудь -> Втяните живот.`,
-    safetyWarning: 'Не напрягайтесь. Движение должно быть плавным, без рывков.',
+    safetyWarning: 'Не напрягайте горло. Движение должно быть плавным, без рывков.',
     contraindications: ['Нет'],
     conditions: ['Лежа (для обучения)', 'Сидя'],
-    mode: 'loop', inhale: 6, holdIn: 2, exhale: 6, holdOut: 2, category: 'Balance', difficulty: 'Новичок'
+    mode: 'loop', inhale: 6, holdIn: 2, exhale: 6, holdOut: 2, 
+    tags: ['lungs', 'relax', 'balance'],
+    category: 'Balance', difficulty: 'Новичок'
   },
   {
     id: 'sama-vritti',
     name: 'Сама Вритти',
-    description: 'Равное дыхание (Квадрат без задержек). Фундаментальная техника для выравнивания ментальных волн (Вритти).',
+    description: 'Равное дыхание. В отличие от тактического "Квадрата", здесь акцент на идеальной плавности, мягкости и отсутствии пауз (в классическом варианте). Это медитация в дыхании.',
     benefits: [
       { label: 'Ментальное Равновесие', icon: 'Scale' },
       { label: 'Концентрация', icon: 'Target' },
@@ -103,13 +109,15 @@ export const balanceTechniques: BreathingPattern[] = [
 Сделайте вдох и выдох абсолютно равными по длине.
 
 1. **Вдох (5 сек):** Ровный, тихий, плавный.
-2. **Переход:** Мгновенное переключение без паузы.
+2. **Переход:** Мгновенное, скругленное переключение без паузы.
 3. **Выдох (5 сек):** Такой же ровный и тихий.
 4. **Цель:** Сделать дыхание настолько тонким, чтобы не колыхалось пламя свечи у носа.`,
     safetyWarning: 'Абсолютно безопасно.',
     contraindications: ['Нет'],
     conditions: ['Перед пранаямой', 'В любое время'],
-    mode: 'loop', inhale: 5, holdIn: 0, exhale: 5, holdOut: 0, category: 'Balance', difficulty: 'Новичок', presets: generateEqualPresets("Равное", false)
+    mode: 'loop', inhale: 5, holdIn: 0, exhale: 5, holdOut: 0, 
+    tags: ['meditation', 'balance', 'calm', 'focus'],
+    category: 'Balance', difficulty: 'Новичок', presets: generateEqualPresets("Равное", false)
   },
   {
     id: 'kaki-mudra',
@@ -131,6 +139,8 @@ export const balanceTechniques: BreathingPattern[] = [
     safetyWarning: 'Избегайте на холоде (риск застудить горло).',
     contraindications: ['Хронический запор (иногда не рекомендуется)', 'Ангина'],
     conditions: ['Для красоты и спокойствия', 'В помещении'],
-    mode: 'loop', inhale: 5, holdIn: 0, exhale: 5, holdOut: 0, category: 'Balance', difficulty: 'Средний'
+    mode: 'loop', inhale: 5, holdIn: 0, exhale: 5, holdOut: 0, 
+    tags: ['beauty', 'cooling', 'balance', 'rejuvenation'],
+    category: 'Balance', difficulty: 'Средний'
   }
 ];

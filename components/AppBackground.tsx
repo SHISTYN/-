@@ -9,8 +9,17 @@ const AppBackground: React.FC<Props> = ({ theme }) => {
         <>
             <div className={`fixed inset-0 z-0 transition-opacity duration-1000 ${theme === 'dark' ? 'opacity-100' : 'opacity-0'}`}>
                 <div className="absolute inset-0 bg-[#050505]">
+                    {/* Animated Aurora */}
                     <div className="absolute top-[-40%] left-[-20%] w-[80vw] h-[80vw] bg-indigo-900/10 rounded-full blur-[150px] animate-aurora mix-blend-screen"></div>
                     <div className="absolute bottom-[-40%] right-[-20%] w-[80vw] h-[80vw] bg-purple-900/10 rounded-full blur-[150px] animate-aurora mix-blend-screen" style={{ animationDelay: '-10s' }}></div>
+                    
+                    {/* Static Atmospheric Anchors (Density Fix) */}
+                    {/* Top Right: Cyan Energy */}
+                    <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-cyan-900/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
+                    {/* Bottom Left: Purple Depth */}
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-900/10 rounded-full blur-[100px] mix-blend-screen pointer-events-none"></div>
+                    
+                    {/* Center Warmth */}
                     <div className="absolute top-[40%] left-[30%] w-[40vw] h-[40vw] bg-amber-900/5 rounded-full blur-[120px] animate-pulse-slow mix-blend-screen"></div>
                 </div>
             </div>

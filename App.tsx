@@ -1,25 +1,38 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { BreathState, BreathingPattern, BreathingPhase } from './types';
 import { DEFAULT_PATTERNS, CATEGORY_NAMES as categoryNames, CATEGORY_ICONS as categoryIcons, PHILOSOPHY_CONTENT } from './constants';
-import Controls from './components/Controls';
-import TimerVisual from './components/TimerVisual';
-import WimHofInterface from './components/WimHofInterface';
 import { getBreathingAnalysis } from './services/geminiService';
-import AnalysisModal from './components/AnalysisModal';
-import EntheoLogo from './components/EntheoLogo';
 import AppBackground from './components/AppBackground';
 import SplashScreen from './components/SplashScreen';
 import Navbar from './components/Navbar';
-import LibraryView from './components/LibraryView';
-import TimerSidebar from './components/TimerSidebar';
-import MobileFaq from './components/MobileFaq';
 import { useAudioSystem } from './hooks/useAudioSystem';
+import { useUserProgress } from './hooks/useUserProgress'; // Import Hook
+
+// --- LAZY IMPORTS (Code Splitting) ---
+// Heavy components are loaded only when needed to free up the main thread
+const Controls = lazy(() => import('./components/Controls'));
+const TimerVisual = lazy(() => import('./components/TimerVisual'));
+const WimHofInterface = lazy(() => import('./components/WimHofInterface'));
+const AnalysisModal = lazy(() => import('./components/AnalysisModal'));
+const LibraryView = lazy(() => import('./components/LibraryView'));
+const TimerSidebar = lazy(() => import('./components/TimerSidebar'));
+const MobileFaq = lazy(() => import('./components/MobileFaq'));
 
 // --- TYPES ---
 type ThemeMode = 'dark' | 'light';
 type ExecutionMode = 'timer' | 'stopwatch';
 
+// Minimal Loader for Suspense
+const LoadingFallback = () => (
+  <div className="w-full h-full flex items-center justify-center">
+    <div className="w-8 h-8 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
+  </div>
+);
+
 const App: React.FC = () => {
+  // --- USER PROGRESS HOOK ---
+  const { favorites, toggleFavorite } = useUserProgress();
+
   // --- State ---
   const [activePattern, setActivePattern] = useState<BreathingPattern>(DEFAULT_PATTERNS[0]);
   const [rounds, setRounds] = useState<number>(0); 
@@ -165,20 +178,23 @@ const App: React.FC = () => {
   }, [timerState.isActive, timerState.isPaused]);
 
 
-  // --- TIMER LOGIC ---
+  // --- TIMER LOGIC (Fix: Correct Calculations) ---
   const calculateTotalDuration = (p: BreathingPattern, r: number) => {
-      return 0;
+      if (p.mode === 'wim-hof' || p.mode === 'stopwatch' || p.mode === 'manual') return 0;
+      const cycleDuration = p.inhale + p.holdIn + p.exhale + p.holdOut;
+      return cycleDuration * r;
   };
 
   const formatDuration = (seconds: number) => {
-      if (seconds === 0) return "0м 0с";
+      if (seconds <= 0) return "0м 0с";
       const m = Math.floor(seconds / 60);
       const s = Math.floor(seconds % 60);
       return `${m}м ${s.toString().padStart(2, '0')}с`;
   };
 
   const totalSessionDuration = calculateTotalDuration(activePattern, rounds);
-  const timeRemaining = 0; 
+  // Calculate remaining time based on elapsed time vs total expected time
+  const timeRemaining = Math.max(0, totalSessionDuration - timerState.totalSecondsElapsed);
 
   const advancePhase = useCallback(() => {
     setTimerState(prev => {
@@ -302,6 +318,7 @@ const App: React.FC = () => {
      }
   }, [timerState.secondsRemaining, timerState.isActive, timerState.isPaused, timerState.currentPhase, advancePhase, executionMode, activePattern.mode]);
 
+
   const toggleTimer = () => {
     initAudio(); 
     if (timerState.currentPhase === BreathingPhase.Done) {
@@ -386,7 +403,9 @@ const App: React.FC = () => {
       <AppBackground theme={theme} />
 
       {/* Modals */}
-      <MobileFaq isOpen={showMobileFaq} onClose={() => setShowMobileFaq(false)} />
+      <Suspense fallback={null}>
+        <MobileFaq isOpen={showMobileFaq} onClose={() => setShowMobileFaq(false)} />
+      </Suspense>
 
       {/* RESULTS MODAL (Legacy, only if logic falls back) */}
       {showResults && activePattern.mode !== 'wim-hof' && (
@@ -411,20 +430,22 @@ const App: React.FC = () => {
         </div>
       )}
       
-      <AnalysisModal 
-         isOpen={isAnalysisOpen} 
-         onClose={() => setAnalysisOpen(false)} 
-         title={`AI Анализ: ${activePattern.name}`} 
-         content={analysisContent}
-         isLoading={isAnalyzing}
-      />
-      <AnalysisModal 
-         isOpen={showPhilosophy} 
-         onClose={() => setShowPhilosophy(false)} 
-         title="Философия Практики" 
-         content={PHILOSOPHY_CONTENT}
-         isLoading={false}
-      />
+      <Suspense fallback={null}>
+        <AnalysisModal 
+           isOpen={isAnalysisOpen} 
+           onClose={() => setAnalysisOpen(false)} 
+           title={`AI Анализ: ${activePattern.name}`} 
+           content={analysisContent}
+           isLoading={isAnalyzing}
+        />
+        <AnalysisModal 
+           isOpen={showPhilosophy} 
+           onClose={() => setShowPhilosophy(false)} 
+           title="Философия Практики" 
+           content={PHILOSOPHY_CONTENT}
+           isLoading={false}
+        />
+      </Suspense>
 
       {/* --- NAVBAR --- */}
       <Navbar 
@@ -445,7 +466,13 @@ const App: React.FC = () => {
       <main className="w-full mx-auto flex-grow flex flex-col relative z-10">
         
         {view === 'library' && (
-            <LibraryView selectPattern={selectPattern} />
+            <Suspense fallback={<LoadingFallback />}>
+                <LibraryView 
+                    selectPattern={selectPattern} 
+                    favorites={favorites} 
+                    toggleFavorite={toggleFavorite} 
+                />
+            </Suspense>
         )}
 
         {view === 'timer' && (
@@ -461,14 +488,16 @@ const App: React.FC = () => {
                         </div>
                         <div className="flex-grow flex flex-col items-center justify-center p-8">
                              <div className="scale-125 mb-10">
-                                <TimerVisual 
-                                    phase={timerState.currentPhase} 
-                                    timeLeft={timerState.totalSecondsElapsed}
-                                    totalTimeForPhase={3}
-                                    label={"Секундомер"}
-                                    mode={'stopwatch'}
-                                    theme={theme}
-                                />
+                                <Suspense fallback={null}>
+                                    <TimerVisual 
+                                        phase={timerState.currentPhase} 
+                                        timeLeft={timerState.totalSecondsElapsed}
+                                        totalTimeForPhase={3}
+                                        label={"Секундомер"}
+                                        mode={'stopwatch'}
+                                        theme={theme}
+                                    />
+                                </Suspense>
                              </div>
                              <button 
                                 onClick={toggleTimer}
@@ -488,22 +517,26 @@ const App: React.FC = () => {
                 )}
 
                 {/* Left Panel */}
-                <TimerSidebar 
-                    activePattern={activePattern}
-                    setView={setView}
-                    infoTab={infoTab}
-                    setInfoTab={setInfoTab}
-                    handleDeepAnalysis={handleDeepAnalysis}
-                    isAnalyzing={isAnalyzing}
-                />
+                <Suspense fallback={<div className="w-full lg:w-[480px] bg-white/5 animate-pulse"></div>}>
+                    <TimerSidebar 
+                        activePattern={activePattern}
+                        setView={setView}
+                        infoTab={infoTab}
+                        setInfoTab={setInfoTab}
+                        handleDeepAnalysis={handleDeepAnalysis}
+                        isAnalyzing={isAnalyzing}
+                    />
+                </Suspense>
 
                 {/* RIGHT PANEL - Conditional Rendering */}
                 {activePattern.mode === 'wim-hof' ? (
                    <div className="flex-1 flex flex-col h-[100dvh] lg:h-full relative overflow-hidden order-2 bg-[#0B0E11] z-30">
-                       <WimHofInterface 
-                           pattern={activePattern} 
-                           onExit={() => setView('library')} 
-                       />
+                       <Suspense fallback={<LoadingFallback />}>
+                           <WimHofInterface 
+                               pattern={activePattern} 
+                               onExit={() => setView('library')} 
+                           />
+                       </Suspense>
                    </div>
                 ) : activePattern.mode !== 'manual' && (
                     <div className="flex-1 flex flex-col min-h-[100dvh] lg:min-h-0 lg:h-full relative overflow-x-hidden lg:overflow-hidden order-2">
@@ -541,7 +574,7 @@ const App: React.FC = () => {
                                             </div>
                                         ) : (
                                             <div className="px-5 py-2 rounded-full bg-gray-100/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 text-sm font-mono font-bold backdrop-blur-sm">
-                                                {rounds > 0 ? `~${formatDuration(totalSessionDuration)}` : '∞'}
+                                                {rounds > 0 ? `Общее время: ~${formatDuration(totalSessionDuration)}` : '∞'}
                                             </div>
                                         )}
                                     </div>
@@ -549,27 +582,29 @@ const App: React.FC = () => {
                             </div>
 
                             <div className="flex-1 flex items-center justify-center w-full px-4">
-                                <TimerVisual 
-                                    phase={timerState.currentPhase} 
-                                    timeLeft={executionMode === 'stopwatch' ? timerState.totalSecondsElapsed : timerState.secondsRemaining}
-                                    totalTimeForPhase={
-                                        timerState.currentPhase === BreathingPhase.Inhale ? activePattern.inhale :
-                                        timerState.currentPhase === BreathingPhase.HoldIn ? activePattern.holdIn :
-                                        timerState.currentPhase === BreathingPhase.Exhale ? activePattern.exhale :
-                                        timerState.currentPhase === BreathingPhase.HoldOut ? activePattern.holdOut :
-                                        3 
-                                    }
-                                    label={timerState.currentPhase}
-                                    patternId={activePattern.id}
-                                    currentRound={timerState.currentRound}
-                                    currentBreath={timerState.currentBreath}
-                                    totalBreaths={activePattern.breathCount}
-                                    mode={executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}
-                                    theme={theme}
-                                />
+                                <Suspense fallback={<LoadingFallback />}>
+                                    <TimerVisual 
+                                        phase={timerState.currentPhase} 
+                                        timeLeft={executionMode === 'stopwatch' ? timerState.totalSecondsElapsed : timerState.secondsRemaining}
+                                        totalTimeForPhase={
+                                            timerState.currentPhase === BreathingPhase.Inhale ? activePattern.inhale :
+                                            timerState.currentPhase === BreathingPhase.HoldIn ? activePattern.holdIn :
+                                            timerState.currentPhase === BreathingPhase.Exhale ? activePattern.exhale :
+                                            timerState.currentPhase === BreathingPhase.HoldOut ? activePattern.holdOut :
+                                            3 
+                                        }
+                                        label={timerState.currentPhase}
+                                        patternId={activePattern.id}
+                                        currentRound={timerState.currentRound}
+                                        currentBreath={timerState.currentBreath}
+                                        totalBreaths={activePattern.breathCount}
+                                        mode={executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}
+                                        theme={theme}
+                                    />
+                                </Suspense>
                             </div>
 
-                            <div className="flex flex-col items-center gap-8 flex-shrink-0 w-full max-w-3xl mx-auto px-4 lg:px-8">
+                            <div className="flex flex-col items-center gap-6 flex-shrink-0 w-full max-w-3xl mx-auto px-4 lg:px-8">
                                 <div className="flex items-center gap-8">
                                     <button 
                                         onClick={resetTimer}
@@ -599,17 +634,19 @@ const App: React.FC = () => {
                                 </div>
 
                                 <div className={`w-full transition-all duration-700 ${timerState.isActive && !timerState.isPaused ? 'opacity-20 blur-sm pointer-events-none grayscale' : 'opacity-100'}`}>
-                                    <Controls 
-                                        pattern={{...activePattern, mode: executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}} 
-                                        onChange={setActivePattern} 
-                                        rounds={rounds} 
-                                        onRoundsChange={setRounds}
-                                        readOnly={timerState.isActive && !timerState.isPaused}
-                                    />
+                                    <Suspense fallback={null}>
+                                        <Controls 
+                                            pattern={{...activePattern, mode: executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}} 
+                                            onChange={setActivePattern} 
+                                            rounds={rounds} 
+                                            onRoundsChange={setRounds}
+                                            readOnly={timerState.isActive && !timerState.isPaused}
+                                        />
+                                    </Suspense>
                                 </div>
                             </div>
                             
-                            <div className="lg:hidden p-6 text-center text-gray-500/50 mt-12 pb-12">
+                            <div className="lg:hidden p-6 text-center text-gray-500/50 mt-4 pb-12">
                                 <div className="flex flex-col items-center gap-3">
                                     <div className="text-[10px] font-bold tracking-[0.1em] opacity-50">
                                         СОЗДАНО С 

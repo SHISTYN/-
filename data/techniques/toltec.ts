@@ -23,7 +23,8 @@ export const toltecTechniques: BreathingPattern[] = [
     contraindications: ['Острые психозы', 'Сильное физическое истощение'],
     conditions: ['В абсолютной тишине', 'Желательно в темноте (или специальном ящике)'],
     musicLinks: [{ label: "Книга: Магические Движения (PDF)", url: "https://gorodnaneve.com/ru/uploads/lib/3623-gorodnaneve-com.pdf", icon: "book" }],
-    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Профи'
+    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Профи',
+    tags: ['energy-return', 'past', 'clearing', 'magic', 'spirit']
   },
   {
     id: 'toltec-pass-35',
@@ -45,7 +46,8 @@ export const toltecTechniques: BreathingPattern[] = [
     safetyWarning: 'Следите за коленями, не сводите их внутрь при приседе.',
     contraindications: ['Травмы коленей', 'Острая боль в спине'],
     conditions: ['Выполнять стоя', 'Босиком для заземления'],
-    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Средний'
+    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Средний',
+    tags: ['energy', 'legs', 'grounding', 'magic']
   },
   {
     id: 'toltec-pass-36',
@@ -67,7 +69,8 @@ export const toltecTechniques: BreathingPattern[] = [
     safetyWarning: 'Не давите слишком сильно на внутренние органы сразу после еды.',
     contraindications: ['Беременность', 'Острые боли в животе', 'Послеоперационный период'],
     conditions: ['На пустой или полупустой желудок'],
-    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Средний'
+    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Средний',
+    tags: ['healing', 'stomach', 'energy', 'magic']
   },
   {
     id: 'toltec-pass-37',
@@ -89,7 +92,8 @@ export const toltecTechniques: BreathingPattern[] = [
     safetyWarning: 'Удары должны быть вибрирующими, а не травмирующими. Не бейте по позвоночнику.',
     contraindications: ['Болезни почек (камни, пиелонефрит)', 'Травмы позвоночника'],
     conditions: ['Стоя', 'В конце комплекса'],
-    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Средний'
+    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Средний',
+    tags: ['energy', 'kidneys', 'will', 'power']
   },
   {
     id: 'toltec-infinity',
@@ -111,7 +115,8 @@ export const toltecTechniques: BreathingPattern[] = [
     safetyWarning: 'Может вызвать сильное головокружение или потерю ориентации в пространстве.',
     contraindications: ['Эпилепсия', 'Склонность к обморокам'],
     conditions: ['Сидя в удобной позе', 'С закрытыми глазами'],
-    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Профи'
+    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Профи',
+    tags: ['spirit', 'protection', 'magic', 'energy', 'trance']
   },
   {
     id: 'toltec-decision-center',
@@ -133,6 +138,7 @@ export const toltecTechniques: BreathingPattern[] = [
     safetyWarning: 'Будьте аккуратны с областью горла, не давите на кадык.',
     contraindications: ['Заболевания щитовидной железы (с осторожностью)'],
     conditions: ['Перед важным выбором', 'Стоя'],
-    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Профи'
+    mode: 'manual', inhale: 0, holdIn: 0, exhale: 0, holdOut: 0, category: 'Toltec', difficulty: 'Профи',
+    tags: ['confidence', 'will', 'magic', 'action']
   }
 ];

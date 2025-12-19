@@ -55,6 +55,8 @@ export interface BreathingPattern {
   audioUrl?: string;
   musicLinks?: MusicLink[];
   
+  tags?: string[]; // Added tags for smart filtering
+  
   category: 'Calm' | 'Energy' | 'Balance' | 'Sleep' | 'Focus' | 'Health' | 'Transcendence' | 'Toltec' | 'Qigong' | 'Tao';
   difficulty: 'Новичок' | 'Средний' | 'Профи';
   presets?: BreathPreset[];

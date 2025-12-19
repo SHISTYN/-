@@ -30,7 +30,9 @@ export const relaxTechniques: BreathingPattern[] = [
     safetyWarning: 'Новичкам не делать более 4 циклов подряд (риск головокружения).',
     contraindications: ['Тяжелая астма (с осторожностью)'],
     conditions: ['Лежа в кровати', 'Сидя перед сном'],
-    mode: 'loop', inhale: 4, holdIn: 7, exhale: 8, holdOut: 0, category: 'Sleep', difficulty: 'Новичок',
+    mode: 'loop', inhale: 4, holdIn: 7, exhale: 8, holdOut: 0, 
+    tags: ['sleep', 'insomnia', 'anxiety', 'stress', 'panic'],
+    category: 'Sleep', difficulty: 'Новичок',
     presets: [{ name: "Классика", inhale: 4, holdIn: 7, exhale: 8, holdOut: 0 }, { name: "Удвоенный", inhale: 8, holdIn: 14, exhale: 16, holdOut: 0 }]
   },
   {
@@ -52,7 +54,9 @@ export const relaxTechniques: BreathingPattern[] = [
     safetyWarning: 'Не практикуйте при депрессии, апатии или низком давлении (усилит вялость).',
     contraindications: ['Гипотония', 'Депрессия', 'Астма (иногда)'],
     conditions: ['Вечером', 'В жару', 'При стрессе'],
-    mode: 'loop', inhale: 4, holdIn: 0, exhale: 8, holdOut: 0, category: 'Calm', difficulty: 'Новичок'
+    mode: 'loop', inhale: 4, holdIn: 0, exhale: 8, holdOut: 0, 
+    tags: ['sleep', 'cooling', 'anxiety', 'insomnia'],
+    category: 'Calm', difficulty: 'Новичок'
   },
   {
     id: 'sitkari',
@@ -72,7 +76,9 @@ export const relaxTechniques: BreathingPattern[] = [
     safetyWarning: 'Не делайте на морозе или в очень холодном помещении (риск простудить горло).',
     contraindications: ['Чувствительные зубы (может быть неприятно)', 'Простуда'],
     conditions: ['В жару', 'После острой пищи', 'При вспышке гнева'],
-    mode: 'loop', inhale: 4, holdIn: 2, exhale: 6, holdOut: 0, category: 'Calm', difficulty: 'Новичок', presets: generateEqualPresets("Ситкари", false)
+    mode: 'loop', inhale: 4, holdIn: 2, exhale: 6, holdOut: 0, 
+    tags: ['cooling', 'anger', 'stress', 'detox'],
+    category: 'Calm', difficulty: 'Новичок', presets: generateEqualPresets("Ситкари", false)
   },
   {
     id: 'udgeeth',
@@ -91,7 +97,9 @@ export const relaxTechniques: BreathingPattern[] = [
     safetyWarning: 'Безопасно для всех. Пойте в комфортном диапазоне.',
     contraindications: ['Нет'],
     conditions: ['Утром или перед медитацией'],
-    mode: 'loop', inhale: 5, holdIn: 0, exhale: 15, holdOut: 0, category: 'Calm', difficulty: 'Новичок'
+    mode: 'loop', inhale: 5, holdIn: 0, exhale: 15, holdOut: 0, 
+    tags: ['meditation', 'spirit', 'calm', 'soul'],
+    category: 'Calm', difficulty: 'Новичок'
   },
   {
     id: '7-11',
@@ -112,12 +120,14 @@ export const relaxTechniques: BreathingPattern[] = [
     safetyWarning: 'Если пропорция 7/11 слишком сложна, используйте 4/8.',
     contraindications: ['Нет'],
     conditions: ['При приступе паники', 'Сильном волнении', 'Перед экзаменом'],
-    mode: 'loop', inhale: 7, holdIn: 0, exhale: 11, holdOut: 0, category: 'Calm', difficulty: 'Новичок'
+    mode: 'loop', inhale: 7, holdIn: 0, exhale: 11, holdOut: 0, 
+    tags: ['panic', 'anxiety', 'emergency', 'stress'],
+    category: 'Calm', difficulty: 'Новичок'
   },
   {
     id: 'bhramari',
     name: 'Бхрамари (Пчела)',
-    description: 'Дыхание жужжащей пчелы. Создает резонанс в черепной коробке, стимулируя гипоталамус и шишковидную железу. Мгновенно "стирает" навязчивые мысли.',
+    description: 'Дыхание жужжащей пчелы. Создает резонанс в черепной коробке, стимулируя гипоталамус. Мгновенно "стирает" навязчивые мысли.',
     benefits: [
       { label: 'Стирание Мыслей', icon: 'Eraser' },
       { label: 'От Головной Боли', icon: 'Bandage' },
@@ -132,7 +142,9 @@ export const relaxTechniques: BreathingPattern[] = [
     safetyWarning: 'Не давите сильно пальцами внутрь слухового прохода.',
     contraindications: ['Гнойный отит', 'Инфекции уха'],
     conditions: ['Перед сном', 'При головной боли напряжения'],
-    mode: 'loop', inhale: 4, holdIn: 0, exhale: 8, holdOut: 0, category: 'Calm', difficulty: 'Новичок', presets: generateBhramariPresets()
+    mode: 'loop', inhale: 4, holdIn: 0, exhale: 8, holdOut: 0, 
+    tags: ['headache', 'stress', 'anxiety', 'sleep'],
+    category: 'Calm', difficulty: 'Новичок', presets: generateBhramariPresets()
   },
   {
     id: 'sitali',
@@ -152,6 +164,8 @@ export const relaxTechniques: BreathingPattern[] = [
     safetyWarning: 'Осторожно при загрязненном воздухе (нет фильтрации носом).',
     contraindications: ['Генетическая неспособность свернуть язык (используйте Ситкари)', 'Простуда'],
     conditions: ['В жару', 'При изжоге'],
-    mode: 'loop', inhale: 4, holdIn: 4, exhale: 4, holdOut: 0, category: 'Calm', difficulty: 'Средний'
+    mode: 'loop', inhale: 4, holdIn: 4, exhale: 4, holdOut: 0, 
+    tags: ['cooling', 'anger', 'hunger', 'detox'],
+    category: 'Calm', difficulty: 'Средний'
   }
 ];

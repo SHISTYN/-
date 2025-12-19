@@ -146,7 +146,7 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
     const [timerVal, setTimerVal] = useState(0);
     
     // Refs for Timing
-    const reqRef = useRef<number>();
+    const reqRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number>(0);
 
     // --- SETUP PREVIEW LOOP (Runs only in SETUP) ---
@@ -192,7 +192,7 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
         const s = SPEEDS[speedKey];
 
         const delay = (ms: number) => new Promise<void>(resolve => {
-            setTimeout(() => resolve(undefined), ms);
+            setTimeout(resolve, ms);
         });
         
         const cycle = async () => {

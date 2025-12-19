@@ -70,7 +70,7 @@ const AnalysisModal: React.FC<AnalysisModalProps> = ({ isOpen, onClose, title, c
               <div className="text-center space-y-2 max-w-sm mx-auto">
                   <p className="text-gray-900 dark:text-white font-bold text-lg">Анализируем технику...</p>
                   <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
-                      Ожидание: <span className="text-cyan-600 dark:text-cyan-400 font-bold">1-2 минуты</span>.
+                      Ожидание: <span className="text-cyan-600 dark:text-cyan-400 font-bold">30-60 секунд</span>.
                       <br/>
                       Пожалуйста, не закрывайте это окно, пока ИИ изучает научные данные.
                   </p>

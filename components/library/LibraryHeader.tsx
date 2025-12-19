@@ -7,63 +7,102 @@ interface LibraryHeaderProps {
     selectedCategory: string;
     onCategoryChange: (category: string) => void;
     totalCount: number;
+    selectedTag: string | null;
+    onTagSelect: (tag: string | null) => void;
 }
+
+const QUICK_FILTERS = [
+    { label: '⚡️ Взбодриться', tags: ['wakeup', 'power'] },
+    { label: '🌙 Уснуть', tags: ['sleep', 'insomnia'] },
+    { label: '🆘 Стоп Паника', tags: ['panic', 'anxiety'] },
+    { label: '🦅 Возврат Энергии', tags: ['energy-return', 'clearing'] },
+];
 
 const LibraryHeader: React.FC<LibraryHeaderProps> = ({ 
     searchQuery, 
     onSearchChange, 
     selectedCategory, 
     onCategoryChange,
-    totalCount 
+    totalCount,
+    selectedTag,
+    onTagSelect
 }) => {
-    const allCategories = ['All', ...Object.keys(CATEGORY_NAMES)];
+    const allCategories = ['All', 'Favorites', ...Object.keys(CATEGORY_NAMES)];
+
+    const getCategoryLabel = (cat: string) => {
+        if (cat === 'All') return 'Все';
+        if (cat === 'Favorites') return '❤️ Избранное';
+        return CATEGORY_NAMES[cat] || cat;
+    };
 
     return (
-        <header className="mb-20 text-center relative">
-            {/* Background Glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-full blur-[100px] -z-10 opacity-50 pointer-events-none"></div>
+        <header className="mb-12 text-center relative max-w-4xl mx-auto">
+            {/* Background Glow - Reduced size for focus */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[200px] bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-full blur-[80px] -z-10 opacity-60 pointer-events-none"></div>
 
-            {/* Counter Badge */}
-            <div className="inline-flex items-center justify-center mb-6 animate-fade-in">
-                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-zen-accent text-[10px] font-bold uppercase tracking-[0.2em] shadow-glow-cyan backdrop-blur-md transition-transform hover:scale-105 cursor-default">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-zen-accent animate-pulse"></span>
-                    {totalCount} Техник в базе
+            {/* Top Row: Counter & Title */}
+            <div className="flex flex-col items-center mb-6">
+                <div className="inline-flex items-center justify-center mb-3 animate-fade-in">
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-zen-accent text-[9px] font-bold uppercase tracking-[0.2em] shadow-glow-cyan backdrop-blur-md cursor-default">
+                        <span className="w-1 h-1 rounded-full bg-cyan-500 dark:bg-zen-accent animate-pulse"></span>
+                        {totalCount} Техник
+                    </div>
                 </div>
-            </div>
 
-            {/* Hero Title */}
-            <h2 className="text-5xl md:text-7xl font-display font-medium mb-8 text-transparent bg-clip-text bg-gradient-to-b from-gray-900 to-gray-500 dark:from-white dark:to-gray-500 tracking-tight leading-[1.1]">
-                Библиотека <br className="md:hidden" /> <span className="italic font-light text-zen-accent dark:text-zen-accent">Дыхания</span>
-            </h2>
+                <h2 className="text-4xl md:text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-b from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 tracking-tight leading-none">
+                    Библиотека <span className="italic font-light text-zen-accent dark:text-zen-accent">Дыхания</span>
+                </h2>
+            </div>
             
-            <div className="max-w-2xl mx-auto space-y-6">
+            {/* Controls Group */}
+            <div className="space-y-4">
                 {/* Search Input */}
-                <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                        <i className="fas fa-search text-gray-400 dark:text-gray-500 group-focus-within:text-zen-accent transition-colors duration-300"></i>
+                <div className="relative group max-w-xl mx-auto">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i className="fas fa-search text-gray-400 dark:text-gray-500 text-sm group-focus-within:text-zen-accent transition-colors duration-300"></i>
                     </div>
                     <input 
                         type="text" 
-                        placeholder="Поиск техник..." 
+                        placeholder="Найти по названию или состоянию..." 
                         value={searchQuery}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        className="w-full pl-12 pr-6 py-4 bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl focus:outline-none focus:border-zen-accent focus:ring-1 focus:ring-zen-accent/50 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-all shadow-lg dark:shadow-none backdrop-blur-md hover:shadow-xl"
+                        className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:border-zen-accent focus:ring-1 focus:ring-zen-accent/50 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 transition-all shadow-sm dark:shadow-none backdrop-blur-md hover:shadow-md"
                     />
                 </div>
 
-                {/* Filter Pills */}
-                <div className="flex flex-wrap justify-center gap-3">
+                {/* Quick Filters */}
+                <div className="flex flex-wrap justify-center gap-2 animate-fade-in-up">
+                    {QUICK_FILTERS.map((filter) => {
+                        const isActive = filter.tags.includes(selectedTag || '');
+                        return (
+                            <button
+                                key={filter.label}
+                                onClick={() => onTagSelect(isActive ? null : filter.tags[0])}
+                                className={`px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-all border duration-200 ${
+                                    isActive 
+                                    ? 'bg-rose-500 text-white border-rose-600 shadow-glow-purple scale-105' 
+                                    : 'bg-white/50 dark:bg-white/5 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/10 hover:text-black dark:hover:text-white'
+                                }`}
+                            >
+                                {filter.label}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Categories */}
+                <div className="flex flex-wrap justify-center gap-2 pt-2">
                     {allCategories.map(cat => (
                         <button
                             key={cat}
                             onClick={() => onCategoryChange(cat)}
-                            className={`px-5 py-2 rounded-full text-xs font-bold transition-all border duration-300 ${
+                            className={`px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-all border duration-300 ${
                                 selectedCategory === cat 
                                 ? 'bg-cyan-100 dark:bg-zen-accent/20 text-cyan-700 dark:text-zen-accent border-cyan-200 dark:border-zen-accent/30 shadow-glow-cyan' 
-                                : 'bg-white/50 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/5 hover:bg-white dark:hover:bg-white/10 hover:text-black dark:hover:text-white'
+                                : 'bg-transparent text-gray-400 dark:text-gray-500 border-transparent hover:text-gray-900 dark:hover:text-white'
                             }`}
                         >
-                            {cat === 'All' ? 'Все' : CATEGORY_NAMES[cat]}
+                            {getCategoryLabel(cat)}
                         </button>
                     ))}
                 </div>
