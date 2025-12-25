@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ExternalLink, Copy, Check, AlertTriangle, Bug } from 'lucide-react';
+import { ExternalLink, Copy, Check, AlertTriangle, Bug, Play } from 'lucide-react';
 
 const MotionDiv = motion.div as any;
 
@@ -28,6 +28,7 @@ interface WimHofGuideProps {
 
 const WimHofGuide: React.FC<WimHofGuideProps> = ({ onStartPractice }) => {
     const [lang, setLang] = useState<'ru' | 'en'>('ru');
+    const [isPlaying, setIsPlaying] = useState(false);
     const [videoError, setVideoError] = useState(false);
     const [copied, setCopied] = useState(false);
     const [showDebug, setShowDebug] = useState(false);
@@ -40,6 +41,12 @@ const WimHofGuide: React.FC<WimHofGuideProps> = ({ onStartPractice }) => {
         }
     }, []);
 
+    // Reset player state when language changes
+    useEffect(() => {
+        setIsPlaying(false);
+        setVideoError(false);
+    }, [lang]);
+
     const activeVideo = VIDEO_DATA[lang];
 
     const handleVideoError = () => {
@@ -50,6 +57,7 @@ const WimHofGuide: React.FC<WimHofGuideProps> = ({ onStartPractice }) => {
         const report = `EntheoBreath Video Report:
 Video ID: ${activeVideo.id} (${lang})
 Status: ${videoError ? 'Load Error' : 'Manual Report'}
+State: ${isPlaying ? 'Playing' : 'Thumbnail'}
 User Agent: ${navigator.userAgent}
 Time: ${new Date().toISOString()}
 Location: ${window.location.href}`;
@@ -104,7 +112,7 @@ Location: ${window.location.href}`;
                     {(['ru', 'en'] as const).map((key) => (
                         <button
                             key={key}
-                            onClick={() => { setLang(key); setVideoError(false); }}
+                            onClick={() => setLang(key)}
                             className={`relative flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all z-10 flex flex-col items-center gap-1 ${
                                 lang === key ? 'text-white' : 'text-gray-500 hover:text-gray-300'
                             }`}
@@ -119,7 +127,7 @@ Location: ${window.location.href}`;
                     ))}
                 </div>
 
-                {/* 3. THE CINEMA (VIDEO PLAYER) */}
+                {/* 3. THE CINEMA (LITE EMBED PLAYER) */}
                 <div className="relative group w-full">
                     {/* Glow Effect behind */}
                     <div className={`absolute -inset-4 bg-gradient-to-r ${activeVideo.color} opacity-20 blur-[50px] transition-all duration-700 group-hover:opacity-30 z-0`}></div>
@@ -127,19 +135,44 @@ Location: ${window.location.href}`;
                     {/* Video Container */}
                     <div className="relative z-10 rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-black aspect-video flex flex-col">
                         {!videoError ? (
-                            <iframe 
-                                key={activeVideo.id}
-                                width="100%" 
-                                height="100%" 
-                                // REVERTED TO STANDARD DOMAIN + ADDED ORIGIN
-                                src={`https://www.youtube.com/embed/${activeVideo.id}?rel=0&autoplay=0&playsinline=1&origin=${origin}`} 
-                                title={activeVideo.title} 
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                allowFullScreen
-                                onError={handleVideoError}
-                                className="w-full h-full object-cover"
-                            ></iframe>
+                            !isPlaying ? (
+                                // THUMBNAIL MODE (Prevents black screen & bot checks)
+                                <div 
+                                    className="w-full h-full relative cursor-pointer group/play"
+                                    onClick={() => setIsPlaying(true)}
+                                >
+                                    <img 
+                                        src={`https://i.ytimg.com/vi/${activeVideo.id}/maxresdefault.jpg`}
+                                        alt={activeVideo.title}
+                                        className="w-full h-full object-cover opacity-80 group-hover/play:opacity-100 transition-opacity duration-500"
+                                    />
+                                    {/* Play Button Overlay */}
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-16 h-16 md:w-20 md:h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-xl group-hover/play:scale-110 transition-transform duration-300 group-hover/play:bg-red-600 group-hover/play:border-red-500">
+                                            <Play size={32} className="text-white ml-1 fill-white" />
+                                        </div>
+                                    </div>
+                                    <div className="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                                        <span className="text-white text-xs font-bold truncate">{activeVideo.title}</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                // IFRAME MODE (Loads only after click)
+                                <iframe 
+                                    key={activeVideo.id}
+                                    width="100%" 
+                                    height="100%" 
+                                    src={`https://www.youtube.com/embed/${activeVideo.id}?autoplay=1&rel=0&playsinline=1&origin=${origin}`} 
+                                    title={activeVideo.title} 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                    allowFullScreen
+                                    onError={handleVideoError}
+                                    className="w-full h-full object-cover animate-fade-in"
+                                ></iframe>
+                            )
                         ) : (
+                            // ERROR STATE
                             <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-zinc-900">
                                 <AlertTriangle className="text-amber-500 w-12 h-12 mb-4 animate-pulse" />
                                 <h3 className="text-white font-bold text-lg mb-2">Видео недоступно</h3>
@@ -209,6 +242,7 @@ Location: ${window.location.href}`;
                                 </div>
                                 <code className="block p-3 bg-black/50 rounded-lg text-[10px] text-gray-400 font-mono break-all whitespace-pre-wrap border border-white/5">
                                     ID: {activeVideo.id} | Lang: {lang}<br/>
+                                    State: {isPlaying ? 'Playing' : 'Thumbnail'}<br/>
                                     UA: {navigator.userAgent.slice(0, 50)}...
                                 </code>
                             </div>
