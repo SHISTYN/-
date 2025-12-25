@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
+import { injectSpeedInsights } from '@vercel/speed-insights';
 import { BreathState, BreathingPattern, BreathingPhase } from './types';
 import { DEFAULT_PATTERNS } from './constants';
 import { getBreathingAnalysis } from './services/geminiService';
@@ -79,6 +80,11 @@ const App: React.FC = () => {
   
   // Ref for Wake Lock
   const wakeLockRef = useRef<any>(null);
+
+  // --- SPEED INSIGHTS INITIALIZATION ---
+  useEffect(() => {
+    injectSpeedInsights();
+  }, []);
 
   // --- SPLASH SCREEN EFFECT ---
   useEffect(() => {
@@ -555,7 +561,7 @@ const App: React.FC = () => {
                                         onClick={() => handleModeSwitch('timer')}
                                         className={`px-6 lg:px-8 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${executionMode === 'timer' ? 'bg-white dark:bg-black text-black dark:text-white shadow-lg' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
                                     >
-                                        Таймер
+                                        ��аймер
                                     </button>
                                     <button 
                                         onClick={() => handleModeSwitch('stopwatch')}
