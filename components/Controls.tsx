@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { BreathingPattern } from '../types';
 import { motion } from 'framer-motion';
 
+// Fix for Framer Motion type mismatch
+const MotionButton = motion.button as any;
+
 interface ControlsProps {
   pattern: BreathingPattern;
   onChange: (newPattern: BreathingPattern) => void;
@@ -47,13 +50,13 @@ const MinimalInput: React.FC<{
             {/* Controls Capsule */}
             <div className="flex items-center justify-between gap-1 w-full bg-white/5 border border-white/5 rounded-2xl p-1 transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:shadow-lg">
                 {/* Minus */}
-                <motion.button 
+                <MotionButton 
                     whileTap={{ scale: 0.8 }}
                     onClick={() => onChange(Math.max(0, Number((value - step).toFixed(1))))}
                     className="w-12 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                 >
                     <i className="fas fa-minus text-xs"></i>
-                </motion.button>
+                </MotionButton>
 
                 {/* Value */}
                 <div className="flex-1 text-center min-w-[40px]">
@@ -70,13 +73,13 @@ const MinimalInput: React.FC<{
                 </div>
 
                 {/* Plus */}
-                <motion.button 
+                <MotionButton 
                     whileTap={{ scale: 0.8 }}
                     onClick={() => onChange(Number((value + step).toFixed(1)))}
                     className="w-12 h-10 flex items-center justify-center rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                 >
                     <i className="fas fa-plus text-xs"></i>
-                </motion.button>
+                </MotionButton>
             </div>
             
             <style>{`
@@ -132,25 +135,25 @@ const Controls: React.FC<ControlsProps> = ({ pattern, onChange, rounds, onRounds
           {/* Presets Selector */}
           {pattern.presets && pattern.presets.length > 0 && (
               <div className="flex items-center gap-2 bg-white/50 dark:bg-white/5 rounded-xl px-2 py-2 border border-gray-200 dark:border-white/5 flex-grow shadow-sm backdrop-blur-md">
-                  <motion.button 
+                  <MotionButton 
                     whileTap={{ scale: 0.9 }}
                     onClick={() => pattern.presets && applyPreset(currentPresetIndex > 0 ? currentPresetIndex - 1 : 0)}
                     disabled={currentPresetIndex <= 0 && !isCustom}
                     className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white disabled:opacity-20 transition-all"
                   >
                       <i className="fas fa-chevron-left text-xs"></i>
-                  </motion.button>
+                  </MotionButton>
                   <span className="text-sm font-bold text-gray-900 dark:text-white truncate text-center flex-1 tracking-wide">
                       {isCustom ? 'Свой' : pattern.presets[currentPresetIndex]?.name}
                   </span>
-                  <motion.button 
+                  <MotionButton 
                     whileTap={{ scale: 0.9 }}
                     onClick={() => pattern.presets && applyPreset(currentPresetIndex < pattern.presets.length - 1 ? currentPresetIndex + 1 : 0)}
                     disabled={currentPresetIndex >= (pattern.presets?.length || 0) - 1}
                     className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400 hover:text-white disabled:opacity-20 transition-all"
                   >
                       <i className="fas fa-chevron-right text-xs"></i>
-                  </motion.button>
+                  </MotionButton>
               </div>
           )}
 
@@ -159,9 +162,9 @@ const Controls: React.FC<ControlsProps> = ({ pattern, onChange, rounds, onRounds
               <div className="flex items-center justify-center gap-4 bg-white/50 dark:bg-white/5 rounded-xl px-4 py-2 border border-gray-200 dark:border-white/5 shadow-sm backdrop-blur-md min-w-[200px]">
                   <span className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Раунды</span>
                   <div className="w-px h-4 bg-gray-300 dark:bg-white/10 mx-1"></div>
-                  <motion.button whileTap={{ scale: 0.8 }} onClick={() => onRoundsChange(Math.max(0, rounds - 1))} className="text-gray-400 hover:text-white w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-all"><i className="fas fa-minus text-xs"></i></motion.button>
+                  <MotionButton whileTap={{ scale: 0.8 }} onClick={() => onRoundsChange(Math.max(0, rounds - 1))} className="text-gray-400 hover:text-white w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-all"><i className="fas fa-minus text-xs"></i></MotionButton>
                   <span className="font-mono text-lg font-bold text-gray-900 dark:text-white w-8 text-center">{rounds === 0 ? '∞' : rounds}</span>
-                  <motion.button whileTap={{ scale: 0.8 }} onClick={() => onRoundsChange(rounds + 1)} className="text-gray-400 hover:text-white w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-all"><i className="fas fa-plus text-xs"></i></motion.button>
+                  <MotionButton whileTap={{ scale: 0.8 }} onClick={() => onRoundsChange(rounds + 1)} className="text-gray-400 hover:text-white w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg transition-all"><i className="fas fa-plus text-xs"></i></MotionButton>
               </div>
           )}
       </div>

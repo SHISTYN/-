@@ -17,6 +17,9 @@ import { SoundMode } from '../../hooks/useAudioSystem';
 import { PHILOSOPHY_CONTENT } from '../../constants';
 import EntheoLogo from '../EntheoLogo';
 
+const MotionHeader = motion.header as any;
+const MotionDiv = motion.div as any;
+
 interface HeaderProps {
     view: 'timer' | 'library';
     setView: (v: 'timer' | 'library') => void;
@@ -80,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
     return (
         <>
         {/* --- FLOATING GLASS CAPSULE --- */}
-        <motion.header
+        <MotionHeader
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -115,7 +118,8 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* 2. NAVIGATION (CENTER) */}
                 <nav className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 bg-white/5 rounded-full p-1 border border-white/5">
                     {NAV_ITEMS.map((item) => {
-                        const isActive = (view === item.id) && !isPhilosophyOpen && (item.id !== 'philosophy');
+                        // Fix for type overlap error: Cast item.id to string for comparison or check explicitly
+                        const isActive = (view === (item.id as string)) && !isPhilosophyOpen && (item.id !== 'philosophy');
                         
                         return (
                             <button
@@ -128,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 `}
                             >
                                 {isActive && (
-                                    <motion.div
+                                    <MotionDiv
                                         layoutId="navPill"
                                         className="absolute inset-0 bg-white/10 rounded-full shadow-sm border border-white/5"
                                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -163,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
                             {isSoundMenuOpen && (
                                 <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsSoundMenuOpen(false)}></div>
-                                <motion.div
+                                <MotionDiv
                                     initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -179,7 +183,7 @@ export const Header: React.FC<HeaderProps> = ({
                                             {opt.label}
                                         </button>
                                     ))}
-                                </motion.div>
+                                </MotionDiv>
                                 </>
                             )}
                         </AnimatePresence>
@@ -211,12 +215,12 @@ export const Header: React.FC<HeaderProps> = ({
 
                 </div>
             </div>
-        </motion.header>
+        </MotionHeader>
 
         {/* --- PHILOSOPHY MODAL (PORTAL) --- */}
         <AnimatePresence>
             {isPhilosophyOpen && (
-                <motion.div 
+                <MotionDiv 
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -227,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
                         onClick={() => setIsPhilosophyOpen(false)} 
                     />
                     
-                    <motion.div 
+                    <MotionDiv 
                         initial={{ scale: 0.95, y: 20, opacity: 0 }}
                         animate={{ scale: 1, y: 0, opacity: 1 }}
                         exit={{ scale: 0.95, y: 20, opacity: 0 }}
@@ -266,8 +270,8 @@ export const Header: React.FC<HeaderProps> = ({
                                 {PHILOSOPHY_CONTENT}
                             </ReactMarkdown>
                         </div>
-                    </motion.div>
-                </motion.div>
+                    </MotionDiv>
+                </MotionDiv>
             )}
         </AnimatePresence>
 
@@ -275,14 +279,14 @@ export const Header: React.FC<HeaderProps> = ({
         <AnimatePresence>
             {isMobileMenuOpen && (
                 <>
-                    <motion.div 
+                    <MotionDiv 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
                     />
-                    <motion.div
+                    <MotionDiv
                         initial={{ y: "-100%" }}
                         animate={{ y: 0 }}
                         exit={{ y: "-100%" }}
@@ -295,7 +299,7 @@ export const Header: React.FC<HeaderProps> = ({
                                     key={item.id}
                                     onClick={() => { handleNavClick(item.id); setIsMobileMenuOpen(false); }}
                                     className={`flex items-center gap-4 p-4 rounded-2xl transition-all ${
-                                        (view === item.id && !isPhilosophyOpen) 
+                                        (view === (item.id as string) && !isPhilosophyOpen) 
                                         ? 'bg-white/10 text-white border border-white/10' 
                                         : 'text-zinc-500 hover:bg-white/5 hover:text-white'
                                     }`}
@@ -318,10 +322,12 @@ export const Header: React.FC<HeaderProps> = ({
                                 <span className="text-sm font-bold uppercase tracking-widest">О приложении</span>
                              </button>
                         </div>
-                    </motion.div>
+                    </MotionDiv>
                 </>
             )}
         </AnimatePresence>
         </>
     );
 };
+
+export default Header;

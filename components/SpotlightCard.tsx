@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 
+const MotionDiv = motion.div as any;
+
 const SpotlightCard: React.FC<{ 
     children: React.ReactNode; 
     className?: string; 
@@ -20,7 +22,7 @@ const SpotlightCard: React.FC<{
     };
 
     return (
-        <motion.div 
+        <MotionDiv 
             ref={divRef}
             onMouseMove={handleMouseMove}
             onClick={onClick}
@@ -39,7 +41,7 @@ const SpotlightCard: React.FC<{
             <div className={`relative z-10 h-full flex flex-col ${contentClassName}`}>
                 {children}
             </div>
-        </motion.div>
+        </MotionDiv>
     );
 };
 

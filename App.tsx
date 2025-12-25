@@ -12,6 +12,7 @@ import { useUserProgress } from './hooks/useUserProgress';
 const Controls = lazy(() => import('./components/Controls'));
 const TimerVisual = lazy(() => import('./components/TimerVisual'));
 const AnulomaVilomaInterface = lazy(() => import('./components/AnulomaVilomaInterface')); 
+const BoxTimerVisual = lazy(() => import('./components/BoxTimerVisual'));
 const WimHofInterface = lazy(() => import('./components/WimHofInterface'));
 const AnalysisModal = lazy(() => import('./components/AnalysisModal'));
 const LibraryView = lazy(() => import('./components/LibraryView'));
@@ -79,6 +80,43 @@ const App: React.FC = () => {
   
   // Ref for Wake Lock
   const wakeLockRef = useRef<any>(null);
+
+  // --- DEEP LINKING (ИЩЕЙКА) ---
+  // Check URL on mount to restore specific technique
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const patternId = params.get('pattern');
+    if (patternId) {
+        const found = DEFAULT_PATTERNS.find(p => p.id === patternId);
+        if (found) {
+            setActivePattern(found);
+            setView('timer');
+            // Auto-configure based on loaded pattern
+            if (found.mode === 'manual') {
+                setInfoTab('guide');
+                setExecutionMode('stopwatch');
+            } else {
+                setInfoTab('about');
+                setExecutionMode('timer');
+            }
+            setRounds(found.mode === 'wim-hof' ? 3 : 12);
+        }
+    }
+  }, []);
+
+  // --- SYNC URL WITH STATE ---
+  // When active pattern changes, update URL silently
+  useEffect(() => {
+      if (view === 'timer' && activePattern) {
+          const url = new URL(window.location.href);
+          url.searchParams.set('pattern', activePattern.id);
+          window.history.replaceState({}, '', url);
+      } else if (view === 'library') {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('pattern');
+          window.history.replaceState({}, '', url);
+      }
+  }, [activePattern, view]);
 
   // --- SPLASH SCREEN EFFECT ---
   useEffect(() => {
@@ -178,7 +216,7 @@ const App: React.FC = () => {
   }, [timerState.isActive, timerState.isPaused]);
 
 
-  // --- TIMER LOGIC (Fix: Correct Calculations) ---
+  // --- TIMER LOGIC ---
   const calculateTotalDuration = (p: BreathingPattern, r: number) => {
       if (p.mode === 'wim-hof' || p.mode === 'stopwatch' || p.mode === 'manual') return 0;
       const cycleDuration = p.inhale + p.holdIn + p.exhale + p.holdOut;
@@ -193,7 +231,6 @@ const App: React.FC = () => {
   };
 
   const totalSessionDuration = calculateTotalDuration(activePattern, rounds);
-  // Calculate remaining time based on elapsed time vs total expected time
   const timeRemaining = Math.max(0, totalSessionDuration - timerState.totalSecondsElapsed);
 
   const advancePhase = useCallback(() => {
@@ -205,61 +242,54 @@ const App: React.FC = () => {
       let currentSessionResults = [...prev.sessionResults];
       let shouldPause = false;
 
-      if (executionMode === 'stopwatch') {
-          return prev;
-      }
+      if (executionMode === 'stopwatch') return prev;
+      if (activePattern.mode === 'wim-hof') return prev; 
 
-      if (activePattern.mode === 'wim-hof') {
-          return prev; 
-      } else {
-          switch (prev.currentPhase) {
-            case BreathingPhase.Ready:
-              nextPhase = BreathingPhase.Inhale;
-              nextDuration = activePattern.inhale;
-              break;
-            case BreathingPhase.Inhale:
-              if (activePattern.holdIn > 0) {
-                nextPhase = BreathingPhase.HoldIn;
-                nextDuration = activePattern.holdIn;
-              } else {
-                nextPhase = BreathingPhase.Exhale;
-                nextDuration = activePattern.exhale;
-              }
-              break;
-            case BreathingPhase.HoldIn:
-              nextPhase = BreathingPhase.Exhale;
-              nextDuration = activePattern.exhale;
-              break;
-            case BreathingPhase.Exhale:
-              if (activePattern.holdOut > 0) {
-                nextPhase = BreathingPhase.HoldOut;
-                nextDuration = activePattern.holdOut;
-              } else {
-                if (rounds > 0 && prev.currentRound >= rounds) {
-                   nextPhase = BreathingPhase.Done;
-                } else {
-                   nextRound = prev.currentRound + 1;
-                   nextPhase = BreathingPhase.Inhale;
-                   nextDuration = activePattern.inhale;
-                }
-              }
-              break;
-            case BreathingPhase.HoldOut:
-               if (rounds > 0 && prev.currentRound >= rounds) {
-                 nextPhase = BreathingPhase.Done;
-               } else {
-                 nextRound = prev.currentRound + 1;
-                 nextPhase = BreathingPhase.Inhale;
-                 nextDuration = activePattern.inhale;
-               }
-               break;
-            default: return prev;
+      switch (prev.currentPhase) {
+        case BreathingPhase.Ready:
+          nextPhase = BreathingPhase.Inhale;
+          nextDuration = activePattern.inhale;
+          break;
+        case BreathingPhase.Inhale:
+          if (activePattern.holdIn > 0) {
+            nextPhase = BreathingPhase.HoldIn;
+            nextDuration = activePattern.holdIn;
+          } else {
+            nextPhase = BreathingPhase.Exhale;
+            nextDuration = activePattern.exhale;
           }
+          break;
+        case BreathingPhase.HoldIn:
+          nextPhase = BreathingPhase.Exhale;
+          nextDuration = activePattern.exhale;
+          break;
+        case BreathingPhase.Exhale:
+          if (activePattern.holdOut > 0) {
+            nextPhase = BreathingPhase.HoldOut;
+            nextDuration = activePattern.holdOut;
+          } else {
+            if (rounds > 0 && prev.currentRound >= rounds) {
+               nextPhase = BreathingPhase.Done;
+            } else {
+               nextRound = prev.currentRound + 1;
+               nextPhase = BreathingPhase.Inhale;
+               nextDuration = activePattern.inhale;
+            }
+          }
+          break;
+        case BreathingPhase.HoldOut:
+           if (rounds > 0 && prev.currentRound >= rounds) {
+             nextPhase = BreathingPhase.Done;
+           } else {
+             nextRound = prev.currentRound + 1;
+             nextPhase = BreathingPhase.Inhale;
+             nextDuration = activePattern.inhale;
+           }
+           break;
+        default: return prev;
       }
 
-      if (nextPhase !== prev.currentPhase) {
-          playSoundEffect(soundMode);
-      }
+      if (nextPhase !== prev.currentPhase) playSoundEffect(soundMode);
       
       if (nextPhase === BreathingPhase.Done) {
          return { ...prev, currentPhase: nextPhase, isActive: false, secondsRemaining: 0 };
@@ -272,7 +302,7 @@ const App: React.FC = () => {
           currentRound: nextRound,
           currentBreath: nextBreath,
           sessionResults: currentSessionResults,
-          isActive: !shouldPause, // Pause if flagged
+          isActive: !shouldPause, 
           isPaused: shouldPause
       };
     });
@@ -284,12 +314,10 @@ const App: React.FC = () => {
       setTimerState(prev => {
         if (!prev.isActive || prev.isPaused || prev.currentPhase === BreathingPhase.Done) return prev;
         
-        // STOPWATCH MODES
         if (executionMode === 'stopwatch') {
              return { ...prev, totalSecondsElapsed: prev.totalSecondsElapsed + deltaTime, secondsRemaining: prev.secondsRemaining + deltaTime };
         }
 
-        // COUNTDOWN MODES
         const newTimeLeft = prev.secondsRemaining - deltaTime;
         if (newTimeLeft <= 0) return { ...prev, secondsRemaining: newTimeLeft, totalSecondsElapsed: prev.totalSecondsElapsed + deltaTime };
         return { ...prev, secondsRemaining: newTimeLeft, totalSecondsElapsed: prev.totalSecondsElapsed + deltaTime };
@@ -310,9 +338,7 @@ const App: React.FC = () => {
   }, [timerState.isActive, timerState.isPaused, tick]);
 
   useEffect(() => {
-     // Auto-advance logic for COUNTDOWN phases only
      const isStopwatch = executionMode === 'stopwatch';
-
      if (!isStopwatch && activePattern.mode !== 'wim-hof' && timerState.isActive && !timerState.isPaused && timerState.secondsRemaining <= 0.05 && timerState.currentPhase !== BreathingPhase.Done) {
          advancePhase();
      }
@@ -366,14 +392,10 @@ const App: React.FC = () => {
       setActivePattern(p);
       setView('timer');
       
-      // SCROLL TO TOP FIX
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-
-      // LOGIC: If Manual (Text Heavy), auto-select 'guide' tab and prepare UI
       if (p.mode === 'manual') {
           setInfoTab('guide');
-          setExecutionMode('stopwatch'); // Default to stopwatch in background just in case
-          setManualStopwatchOpen(false); // Ensure overlay is closed initially
+          setExecutionMode('stopwatch'); 
+          setManualStopwatchOpen(false); 
       } else {
           setInfoTab('about');
           setExecutionMode('timer'); 
@@ -396,44 +418,16 @@ const App: React.FC = () => {
       }));
   };
 
+  // --- APP SHELL ARCHITECTURE ---
   return (
-    <div className="min-h-screen flex flex-col font-sans selection:bg-purple-500/30 overflow-x-hidden relative text-zinc-900 dark:text-gray-100 transition-colors duration-500 bg-slate-50 dark:bg-[#050505]">
+    <div className="h-[100dvh] w-full flex flex-col font-sans selection:bg-purple-500/30 overflow-hidden relative text-zinc-900 dark:text-gray-100 transition-colors duration-500 bg-slate-50 dark:bg-[#000000]">
       
-      {/* LOADING SCREEN (SPLASH) */}
       <SplashScreen isLoading={isLoadingApp} />
-
-      {/* --- PREMIUM ANIMATED BACKGROUND --- */}
       <AppBackground theme={theme} />
 
-      {/* Modals */}
+      {/* MODALS */}
       <Suspense fallback={null}>
         <MobileFaq isOpen={showMobileFaq} onClose={() => setShowMobileFaq(false)} />
-      </Suspense>
-
-      {/* RESULTS MODAL (Legacy, only if logic falls back) */}
-      {showResults && activePattern.mode !== 'wim-hof' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-fade-in">
-             <div className="bg-[#121212] p-8 rounded-3xl max-w-md w-full border border-white/10 shadow-2xl relative z-50 text-center">
-                <h3 className="text-3xl font-display font-bold mb-2 text-white">Результаты</h3>
-                <p className="text-gray-400 text-sm mb-8 uppercase tracking-widest">Сессия Вима Хофа</p>
-                
-                <div className="space-y-4 mb-8">
-                    {timerState.sessionResults.map((time, idx) => (
-                        <div key={idx} className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
-                            <span className="text-gray-400 font-bold uppercase text-xs tracking-wider">Раунд {idx + 1}</span>
-                            <span className="text-2xl font-mono font-bold text-cyan-400">{formatDuration(time)}</span>
-                        </div>
-                    ))}
-                </div>
-
-                <button onClick={resetTimer} className="w-full py-4 bg-white text-black font-bold rounded-xl hover:scale-[1.02] transition-transform shadow-glow-cyan uppercase tracking-widest text-sm">
-                    Завершить
-                </button>
-             </div>
-        </div>
-      )}
-      
-      <Suspense fallback={null}>
         <AnalysisModal 
            isOpen={isAnalysisOpen} 
            onClose={() => setAnalysisOpen(false)} 
@@ -443,7 +437,7 @@ const App: React.FC = () => {
         />
       </Suspense>
 
-      {/* --- HEADER (Replaces Navbar) --- */}
+      {/* HEADER */}
       <Header 
         view={view}
         setView={setView}
@@ -451,241 +445,166 @@ const App: React.FC = () => {
         toggleTheme={toggleTheme}
         deferredPrompt={deferredPrompt}
         handleInstallClick={handleInstallClick}
-        setShowPhilosophy={() => {}} // No-op as handled internally
         soundMode={soundMode}
         changeSoundMode={changeSoundMode}
         handleShare={handleShare}
         setShowMobileFaq={setShowMobileFaq}
       />
 
-      {/* Main Content */}
-      <main className="w-full mx-auto flex-grow flex flex-col relative z-10 pt-28 md:pt-32">
+      {/* MAIN CONTENT AREA */}
+      <main className="w-full flex-grow flex flex-col relative z-10 overflow-hidden">
         
         {view === 'library' && (
-            <Suspense fallback={<LoadingFallback />}>
-                <LibraryView 
-                    selectPattern={selectPattern} 
-                    favorites={favorites} 
-                    toggleFavorite={toggleFavorite} 
-                />
-            </Suspense>
+            // LIBRARY SCROLL CONTAINER
+            <div className="flex-grow overflow-y-auto custom-scrollbar pt-24 md:pt-32 pb-24">
+                <Suspense fallback={<LoadingFallback />}>
+                    <LibraryView 
+                        selectPattern={selectPattern} 
+                        favorites={favorites} 
+                        toggleFavorite={toggleFavorite} 
+                    />
+                </Suspense>
+            </div>
         )}
 
         {view === 'timer' && (
-            <div className="flex-grow flex flex-col lg:flex-row min-h-[100dvh] lg:h-[calc(100vh-8rem)] lg:overflow-hidden relative">
+            // TIMER SPLIT VIEW - FIX: Robust Flex Column
+            <div className="flex-grow flex flex-col lg:flex-row h-full w-full relative pt-24 md:pt-28 lg:pt-32 overflow-hidden">
                 
-                {manualStopwatchOpen && (
-                    <div className="absolute inset-0 z-50 bg-[#050505] flex flex-col animate-fade-in">
-                        <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                            <h3 className="text-xl font-bold font-display text-white">Секундомер</h3>
-                            <button onClick={() => setManualStopwatchOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20">
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div className="flex-grow flex flex-col items-center justify-center p-8">
-                             <div className="scale-125 mb-10">
-                                <Suspense fallback={null}>
-                                    <TimerVisual 
-                                        phase={timerState.currentPhase} 
-                                        timeLeft={timerState.totalSecondsElapsed}
-                                        totalTimeForPhase={3}
-                                        label={"Секундомер"}
-                                        mode={'stopwatch'}
-                                        theme={theme}
-                                    />
-                                </Suspense>
-                             </div>
-                             <button 
-                                onClick={toggleTimer}
-                                className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl transition-all active:scale-95 shadow-[0_0_60px_rgba(255,255,255,0.1)] ${
-                                    timerState.isActive && !timerState.isPaused
-                                    ? 'bg-[#121212] text-rose-500 border border-rose-500/20'
-                                    : 'bg-white text-black'
-                                }`}
-                            >
-                                <i className={`fas fa-${timerState.isActive && !timerState.isPaused ? 'pause' : 'play ml-1'}`}></i>
-                            </button>
-                            <button onClick={resetTimer} className="mt-8 text-gray-500 text-sm font-bold uppercase tracking-widest hover:text-white">
-                                Сброс
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Left Panel (Sidebar) - REORDERED: Order-2 on mobile, Order-1 on Desktop */}
-                <div className="contents lg:block order-2 lg:order-1">
-                    <Suspense fallback={<div className="w-full lg:w-[480px] bg-white/5 animate-pulse"></div>}>
-                        <TimerSidebar 
-                            activePattern={activePattern}
-                            setView={setView}
-                            infoTab={infoTab}
-                            setInfoTab={setInfoTab}
-                            handleDeepAnalysis={handleDeepAnalysis}
-                            isAnalyzing={isAnalyzing}
-                        />
-                    </Suspense>
-                </div>
-
-                {/* RIGHT PANEL - REORDERED: Order-1 on mobile, Order-2 on Desktop */}
-                {activePattern.mode === 'wim-hof' ? (
-                   // MOBILE LAYOUT FIX: Changed overflow-hidden to overflow-y-auto on mobile to allow scrolling through long setup content
-                   <div className="flex-1 flex flex-col h-[100dvh] lg:h-full relative overflow-y-auto lg:overflow-hidden bg-[#0B0E11] z-30 order-1 lg:order-2">
-                       <Suspense fallback={<LoadingFallback />}>
-                           <WimHofInterface 
-                               pattern={activePattern} 
-                               onExit={() => setView('library')} 
-                           />
-                       </Suspense>
-                   </div>
-                ) : activePattern.mode !== 'manual' && (
-                    <div className="flex-1 flex flex-col min-h-[100dvh] lg:min-h-0 lg:h-full relative overflow-y-auto lg:overflow-hidden order-1 lg:order-2 custom-scrollbar">
+                {/* --- 1. TOP PANEL: VISUALIZER + CONTROLS --- */}
+                {/* Mobile: Takes top part, NO SCROLL. Desktop: Flex 1 */}
+                <div className={`
+                    flex flex-col justify-between shrink-0 relative z-10
+                    ${activePattern.mode === 'manual' ? 'hidden' : 'flex'}
+                    lg:order-2 lg:flex-1 lg:h-full lg:overflow-hidden
+                    h-[60%] border-b border-zinc-200 dark:border-white/5 lg:border-0
+                `}>
                     
+                    {/* Visualizer Area (Centered) */}
+                    <div className="flex-1 flex items-center justify-center w-full px-4 min-h-0 relative">
+                        {/* Background Effect */}
                         <div 
                             className={`absolute inset-0 transition-opacity duration-1000 z-0 pointer-events-none ${timerState.isActive ? 'opacity-30' : 'opacity-0'}`}
-                            style={{
-                                background: 'radial-gradient(circle at center, rgba(34, 211, 238, 0.15) 0%, rgba(0,0,0,0) 70%)'
-                            }}
+                            style={{ background: 'radial-gradient(circle at center, rgba(34, 211, 238, 0.15) 0%, rgba(0,0,0,0) 70%)' }}
                         ></div>
 
-                        <div className="flex flex-col min-h-full lg:h-full justify-between z-10 py-6">
-                            
-                            <div className="flex flex-col items-center gap-6 flex-shrink-0">
-                                <div className="flex items-center justify-center p-1.5 bg-gray-200 dark:bg-white/5 rounded-full backdrop-blur-md border border-zinc-200 dark:border-white/10 scale-90 lg:scale-100">
-                                    <button 
-                                        onClick={() => handleModeSwitch('timer')}
-                                        className={`px-6 lg:px-8 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${executionMode === 'timer' ? 'bg-white dark:bg-black text-black dark:text-white shadow-lg' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
-                                    >
-                                        Таймер
-                                    </button>
-                                    <button 
-                                        onClick={() => handleModeSwitch('stopwatch')}
-                                        className={`px-6 lg:px-8 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${executionMode === 'stopwatch' ? 'bg-white dark:bg-black text-black dark:text-white shadow-lg' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
-                                    >
-                                        Секундомер
-                                    </button>
-                                </div>
+                        {/* Top Info (Mode/Time) */}
+                        <div className="absolute top-0 left-0 right-0 flex justify-center py-2 z-20">
+                             {/* Mode Toggle Button */}
+                             <div className="flex items-center justify-center p-1 bg-gray-200 dark:bg-white/5 rounded-full backdrop-blur-md border border-zinc-200 dark:border-white/10 scale-75">
+                                <button 
+                                    onClick={() => handleModeSwitch('timer')}
+                                    className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all ${executionMode === 'timer' ? 'bg-white dark:bg-black text-black dark:text-white shadow' : 'text-gray-500'}`}
+                                >
+                                    Таймер
+                                </button>
+                                <button 
+                                    onClick={() => handleModeSwitch('stopwatch')}
+                                    className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all ${executionMode === 'stopwatch' ? 'bg-white dark:bg-black text-black dark:text-white shadow' : 'text-gray-500'}`}
+                                >
+                                    Секундомер
+                                </button>
+                            </div>
+                        </div>
 
+                        {/* The Timer Itself */}
+                        <div className="relative z-10 transform scale-90 md:scale-100">
+                            <Suspense fallback={<LoadingFallback />}>
+                                {activePattern.id === 'anuloma-viloma-base' && executionMode !== 'stopwatch' ? (
+                                    <AnulomaVilomaInterface
+                                        phase={timerState.currentPhase}
+                                        timeLeft={timerState.secondsRemaining}
+                                        totalTime={10} 
+                                        currentRound={timerState.currentRound}
+                                    />
+                                ) : activePattern.id === 'box-breathing' && executionMode !== 'stopwatch' ? (
+                                    <BoxTimerVisual
+                                        phase={timerState.currentPhase}
+                                        timeLeft={timerState.secondsRemaining}
+                                        totalTimeForPhase={4}
+                                        currentRound={timerState.currentRound}
+                                        label={timerState.currentPhase}
+                                    />
+                                ) : (
+                                    <TimerVisual 
+                                        phase={timerState.currentPhase} 
+                                        timeLeft={executionMode === 'stopwatch' ? timerState.totalSecondsElapsed : timerState.secondsRemaining}
+                                        totalTimeForPhase={timerState.secondsRemaining} // Approx
+                                        label={timerState.currentPhase}
+                                        patternId={activePattern.id}
+                                        currentRound={timerState.currentRound}
+                                        currentBreath={timerState.currentBreath}
+                                        totalBreaths={activePattern.breathCount}
+                                        mode={executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}
+                                        theme={theme}
+                                    />
+                                )}
+                            </Suspense>
+                        </div>
+                    </div>
+
+                    {/* Bottom Controls Area (Fixed at bottom of Top Panel) */}
+                    <div className="flex-shrink-0 w-full px-4 pb-4 pt-2 bg-white/50 dark:bg-[#050505]/50 backdrop-blur-md border-t border-white/5 z-20">
+                        <div className="max-w-md mx-auto flex flex-col gap-4">
+                            {/* Play Controls */}
+                            <div className="flex items-center justify-center gap-6">
+                                <button onClick={resetTimer} className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-white/10 flex items-center justify-center text-zinc-500 hover:text-black dark:text-gray-400 dark:hover:text-white"><i className="fas fa-redo text-sm"></i></button>
+                                <button onClick={toggleTimer} className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform active:scale-95 ${timerState.isActive && !timerState.isPaused ? 'bg-white text-rose-500 border-2 border-rose-500' : 'bg-zinc-900 text-white dark:bg-white dark:text-black'}`}>
+                                    <i className={`fas fa-${timerState.isActive && !timerState.isPaused ? 'pause' : 'play ml-1'}`}></i>
+                                </button>
                                 {executionMode === 'timer' && (
-                                    <div className="flex items-center justify-center gap-4 relative z-20">
-                                        {timerState.isActive && rounds > 0 ? (
-                                            <div className="px-5 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-zen-accent text-sm font-mono font-bold shadow-glow-cyan animate-pulse-slow">
-                                                Осталось: {formatDuration(timeRemaining)}
-                                            </div>
-                                        ) : (
-                                            <div className="px-5 py-2 rounded-full bg-gray-100/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 text-sm font-mono font-bold backdrop-blur-sm">
-                                                {rounds > 0 ? `Общее время: ~${formatDuration(totalSessionDuration)}` : '∞'}
-                                            </div>
-                                        )}
+                                    <div className="w-10 h-10 flex flex-col items-center justify-center bg-zinc-100 dark:bg-white/10 rounded-full">
+                                        <span className="text-xs font-bold">{timerState.currentRound}</span>
                                     </div>
                                 )}
                             </div>
-
-                            <div className="flex-1 flex items-center justify-center w-full px-4">
-                                <Suspense fallback={<LoadingFallback />}>
-                                    {/* CONDITIONAL RENDERING FOR ANULOMA VILOMA */}
-                                    {activePattern.id === 'anuloma-viloma-base' && executionMode !== 'stopwatch' ? (
-                                        <AnulomaVilomaInterface
-                                            phase={timerState.currentPhase}
-                                            timeLeft={timerState.secondsRemaining}
-                                            totalTime={
-                                                timerState.currentPhase === BreathingPhase.Inhale ? activePattern.inhale :
-                                                timerState.currentPhase === BreathingPhase.HoldIn ? activePattern.holdIn :
-                                                timerState.currentPhase === BreathingPhase.Exhale ? activePattern.exhale :
-                                                timerState.currentPhase === BreathingPhase.HoldOut ? activePattern.holdOut : 3
-                                            }
-                                            currentRound={timerState.currentRound}
-                                            onPatternUpdate={(updates) => setActivePattern(prev => ({...prev, ...updates}))}
-                                            activePattern={activePattern}
-                                        />
-                                    ) : (
-                                        <TimerVisual 
-                                            phase={timerState.currentPhase} 
-                                            timeLeft={executionMode === 'stopwatch' ? timerState.totalSecondsElapsed : timerState.secondsRemaining}
-                                            totalTimeForPhase={
-                                                timerState.currentPhase === BreathingPhase.Inhale ? activePattern.inhale :
-                                                timerState.currentPhase === BreathingPhase.HoldIn ? activePattern.holdIn :
-                                                timerState.currentPhase === BreathingPhase.Exhale ? activePattern.exhale :
-                                                timerState.currentPhase === BreathingPhase.HoldOut ? activePattern.holdOut :
-                                                3 
-                                            }
-                                            label={timerState.currentPhase}
-                                            patternId={activePattern.id}
-                                            currentRound={timerState.currentRound}
-                                            currentBreath={timerState.currentBreath}
-                                            totalBreaths={activePattern.breathCount}
-                                            mode={executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}
-                                            theme={theme}
-                                        />
-                                    )}
+                            
+                            {/* Settings (Inputs) */}
+                            <div className={`transition-all duration-300 ${timerState.isActive && !timerState.isPaused ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                                <Suspense fallback={null}>
+                                    <Controls 
+                                        pattern={{...activePattern, mode: executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}} 
+                                        onChange={setActivePattern} 
+                                        rounds={rounds} 
+                                        onRoundsChange={setRounds}
+                                        readOnly={timerState.isActive && !timerState.isPaused}
+                                    />
                                 </Suspense>
                             </div>
-
-                            <div className="flex flex-col items-center gap-6 flex-shrink-0 w-full max-w-3xl mx-auto px-4 lg:px-8">
-                                <div className="flex items-center gap-8">
-                                    <button 
-                                        onClick={resetTimer}
-                                        className="w-12 h-12 rounded-full bg-white/50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 border border-gray-200 dark:border-white/5 flex items-center justify-center text-gray-400 hover:text-black dark:hover:text-white transition-all backdrop-blur-md active:scale-90"
-                                    >
-                                        <i className="fas fa-redo"></i>
-                                    </button>
-
-                                    <button 
-                                        onClick={toggleTimer}
-                                        className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl transition-all active:scale-95 ${
-                                            timerState.isActive && !timerState.isPaused
-                                            ? 'bg-white dark:bg-[#121212] text-rose-500 border border-rose-200 dark:border-rose-500/20 shadow-[0_0_60px_rgba(244,63,94,0.4)] hover:shadow-rose-500/50 hover:scale-105'
-                                            : 'bg-zinc-900 dark:bg-white text-white dark:text-black hover:opacity-90 shadow-[0_0_60px_rgba(0,0,0,0.1)] dark:shadow-[0_0_60px_rgba(255,255,255,0.2)] hover:scale-105'
-                                        }`}
-                                    >
-                                        <i className={`fas fa-${timerState.isActive && !timerState.isPaused ? 'pause' : 'play ml-1'}`}></i>
-                                    </button>
-
-                                    {executionMode === 'timer' && (
-                                        <div className="w-12 h-12 flex flex-col items-center justify-center bg-white/50 dark:bg-white/5 rounded-full border border-gray-200 dark:border-white/5 backdrop-blur-md">
-                                            <span className="text-lg font-mono font-bold text-gray-900 dark:text-white">{timerState.currentRound}</span>
-                                            <span className="text-[8px] text-gray-400 uppercase tracking-wider">Раунд</span>
-                                        </div>
-                                    )}
-                                    {executionMode === 'stopwatch' && <div className="w-12 h-12"></div>}
-                                </div>
-
-                                <div className={`w-full transition-all duration-700 ${timerState.isActive && !timerState.isPaused ? 'opacity-20 blur-sm pointer-events-none grayscale' : 'opacity-100'}`}>
-                                    <Suspense fallback={null}>
-                                        <Controls 
-                                            pattern={{...activePattern, mode: executionMode === 'stopwatch' ? 'stopwatch' : activePattern.mode}} 
-                                            onChange={setActivePattern} 
-                                            rounds={rounds} 
-                                            onRoundsChange={setRounds}
-                                            readOnly={timerState.isActive && !timerState.isPaused}
-                                        />
-                                    </Suspense>
-                                </div>
-                            </div>
-                            
-                            <div className="lg:hidden p-6 text-center text-gray-500/50 mt-4 pb-12">
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="text-[10px] font-bold tracking-[0.1em] opacity-50">
-                                        СОЗДАНО С 
-                                        <a href="https://t.me/+D78P1fpaduBlOTc6" target="_blank" rel="noopener noreferrer" className="inline-block mx-1 align-middle cursor-default">
-                                            <span className="text-rose-500 animate-pulse text-sm">❤️</span>
-                                        </a> 
-                                        — <a href="https://t.me/nikolaiovchinnikov" target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 transition-colors border-b border-transparent hover:border-cyan-500">НИКОЛАЙ ОВЧИННИКОВ</a>
-                                    </div>
-                                    <a href="https://t.me/nikolaiovchinnikov" target="_blank" rel="noopener noreferrer" className="text-[8px] uppercase font-bold tracking-[0.2em] text-gray-400 hover:text-cyan-500 transition-colors border border-gray-200 dark:border-white/5 px-3 py-1.5 rounded-full">
-                                        <i className="fab fa-telegram mr-2"></i>
-                                        Обратная связь
-                                    </a>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
-                )}
+                </div>
 
+                {/* --- 2. BOTTOM PANEL: SIDEBAR INFO --- */}
+                {/* Mobile: Fills remaining space, Scrollable. Desktop: Left sidebar */}
+                <div className={`
+                    flex-1 min-h-0 overflow-y-auto custom-scrollbar relative bg-white dark:bg-[#0a0a0b] z-20
+                    lg:order-1 lg:w-[480px] lg:flex-none lg:border-r border-zinc-200 dark:border-white/5
+                    ${activePattern.mode === 'manual' ? 'h-full order-1' : ''}
+                `}>
+                    {activePattern.mode === 'wim-hof' ? (
+                        <Suspense fallback={<LoadingFallback />}>
+                           <WimHofInterface pattern={activePattern} onExit={() => setView('library')} />
+                        </Suspense>
+                    ) : (
+                        <Suspense fallback={<div className="w-full h-full bg-white/5 animate-pulse"></div>}>
+                            <TimerSidebar 
+                                activePattern={activePattern}
+                                setView={setView}
+                                infoTab={infoTab}
+                                setInfoTab={setInfoTab}
+                                handleDeepAnalysis={handleDeepAnalysis}
+                                isAnalyzing={isAnalyzing}
+                            />
+                        </Suspense>
+                    )}
+                </div>
+
+                {/* Manual Mode Float Button */}
                 {activePattern.mode === 'manual' && (
                     <button 
                         onClick={() => setManualStopwatchOpen(true)}
-                        className="fixed bottom-8 right-8 z-40 bg-white dark:bg-zen-accent text-black font-bold p-4 rounded-full shadow-glow-cyan animate-pulse-slow hover:scale-110 transition-all active:scale-95"
+                        className="fixed bottom-8 right-8 z-50 bg-white dark:bg-zen-accent text-black font-bold p-4 rounded-full shadow-glow-cyan animate-pulse-slow hover:scale-110 transition-all active:scale-95"
                     >
                          <i className="fas fa-stopwatch text-xl"></i>
                     </button>

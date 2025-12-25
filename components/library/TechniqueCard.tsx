@@ -9,13 +9,35 @@ interface TechniqueCardProps {
     onClick: () => void;
     isFavorite?: boolean;
     onToggleFavorite?: (id: string) => void;
+    searchQuery?: string;
 }
+
+// --- HIGHLIGHTER UTILITY ---
+const HighlightedText: React.FC<{ text: string; query: string; className?: string }> = ({ text, query, className }) => {
+    if (!query) return <span className={className}>{text}</span>;
+
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return (
+        <span className={className}>
+            {parts.map((part, i) => 
+                part.toLowerCase() === query.toLowerCase() ? (
+                    <span key={i} className="bg-yellow-400/30 text-yellow-900 dark:text-yellow-100 rounded-sm px-0.5 box-decoration-clone">
+                        {part}
+                    </span>
+                ) : (
+                    part
+                )
+            )}
+        </span>
+    );
+};
 
 const TechniqueCard: React.FC<TechniqueCardProps> = ({ 
     pattern, 
     onClick, 
     isFavorite = false, 
-    onToggleFavorite 
+    onToggleFavorite,
+    searchQuery = "" 
 }) => {
     // 👑 THE KING CHECK
     const isKing = pattern.id === 'wim-hof-session';
@@ -100,14 +122,14 @@ const TechniqueCard: React.FC<TechniqueCardProps> = ({
                     )}
                 </div>
                 <h3 className={`text-base md:text-lg font-display font-extrabold group-hover:text-cyan-600 dark:group-hover:text-zen-accent transition-colors leading-tight ${isKing ? 'text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-200' : 'text-zinc-900 dark:text-white'}`}>
-                    {pattern.name}
+                    <HighlightedText text={pattern.name} query={searchQuery} />
                 </h3>
             </div>
 
             {/* Description */}
-            <p className={`text-[13px] mb-4 line-clamp-3 leading-snug font-medium flex-grow opacity-90 relative z-20 ${isKing ? 'text-gray-300' : 'text-zinc-500 dark:text-zinc-400'}`}>
-                {pattern.description}
-            </p>
+            <div className={`text-[13px] mb-4 line-clamp-3 leading-snug font-medium flex-grow opacity-90 relative z-20 ${isKing ? 'text-gray-300' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                <HighlightedText text={pattern.description} query={searchQuery} />
+            </div>
             
             {/* Benefits Grid */}
             <div className="grid grid-cols-2 gap-1.5 mb-3 mt-auto relative z-20 w-full">

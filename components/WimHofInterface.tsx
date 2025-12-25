@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BreathingPattern } from '../types';
 import WimHofGuide from './techniques/WimHofGuide'; // Import Guide
 
+// Fix for Framer Motion type mismatch
+const MotionPath = motion.path as any;
+const MotionSpan = motion.span as any;
+const MotionDiv = motion.div as any;
+
 // --- TYPES & CONSTANTS ---
 
 type WhmPhase = 'SETUP' | 'PREP' | 'BREATHING' | 'RETENTION' | 'RECOVERY_PREP' | 'RECOVERY' | 'ROUND_WAIT' | 'DONE';
@@ -85,7 +90,7 @@ const HarmonicHexagon: React.FC<{
                 </defs>
                 
                 {showLayers && [2, 1, 0].map(i => (
-                    <motion.path
+                    <MotionPath
                         key={i}
                         custom={i}
                         d={path}
@@ -100,21 +105,21 @@ const HarmonicHexagon: React.FC<{
             </svg>
 
             <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none">
-                <motion.span 
+                <MotionSpan 
                     variants={textVariants}
                     animate={state}
                     className="font-display font-bold text-zinc-900 dark:text-white tabular-nums leading-none text-7xl md:text-8xl bg-gradient-to-b from-white via-white to-gray-400 bg-[length:100%_200%] animate-shimmer-slow bg-clip-text text-transparent"
                 >
                     {label}
-                </motion.span>
+                </MotionSpan>
                 
                 {subLabel && (
-                    <motion.span 
+                    <MotionSpan 
                         animate={{ opacity: state === 'inhale' || state === 'hold' ? 1 : 0.6 }}
                         className="mt-4 text-[10px] font-bold uppercase tracking-[0.3em] text-white/90 bg-zinc-900/80 dark:bg-black/40 px-3 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-lg"
                     >
                         {subLabel}
-                    </motion.span>
+                    </MotionSpan>
                 )}
             </div>
         </div>
@@ -318,7 +323,7 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
                                 className={`flex-1 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-lg relative z-10 transition-colors duration-300 ${activeTab === tab ? 'text-zinc-900 dark:text-white' : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-gray-300'}`}
                             >
                                 {activeTab === tab && (
-                                    <motion.div 
+                                    <MotionDiv 
                                         layoutId="activeWhmTab"
                                         className="absolute inset-0 bg-white dark:bg-white/10 rounded-lg shadow-sm"
                                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -441,7 +446,7 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
                                      phase === 'PREP' ? "ПРИГОТОВЬТЕСЬ" : ""}
                                 </h2>
 
-                                <motion.div 
+                                <MotionDiv 
                                     className="relative z-10"
                                     animate={phase === 'BREATHING' ? { scale: breathAnimState === 'inhale' ? 1.2 : 0.9 } : { scale: 1 }}
                                     transition={{ duration: phase === 'BREATHING' ? (breathAnimState === 'inhale' ? SPEEDS[speedKey].inhale : SPEEDS[speedKey].exhale) : 0.5 }}
@@ -471,7 +476,7 @@ const WimHofInterface: React.FC<Props> = ({ pattern, onExit }) => {
                                         }
                                         showLayers={!['RETENTION', 'ROUND_WAIT', 'DONE'].includes(phase)}
                                     />
-                                </motion.div>
+                                </MotionDiv>
                                 
                                 {phase === 'BREATHING' && (
                                     <div className="absolute bottom-10 px-5 py-2 rounded-full bg-zinc-100 dark:bg-white/5 border border-zinc-200 dark:border-white/5 backdrop-blur-md animate-pulse">

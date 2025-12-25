@@ -2,27 +2,25 @@
 <html lang="ru" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <!-- Primary Meta Tags -->
     <title>EntheoBreath — Дыхание и Сознание</title>
     <meta name="title" content="EntheoBreath — Дыхание и Сознание" />
     <meta name="description" content="Энтеогенные дыхательные практики, таймеры Вима Хофа, магия Тольтеков и глубокий AI-анализ состояний." />
-    <meta name="theme-color" content="#050505" />
+    <meta name="theme-color" content="#000000" />
 
-    <!-- Open Graph / Facebook / Telegram (LARGE CARD SETUP) -->
+    <!-- Open Graph / Facebook / Telegram -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://entheo-breath.vercel.app/" />
     <meta property="og:title" content="EntheoBreath — Дыхание и Сознание" />
     <meta property="og:description" content="Твой карманный трип-ситтер. Практики Вима Хофа, Холотропное дыхание, Тенсегрити и AI-анализ состояний." />
-    
-    <!-- Ссылка на PNG с параметром ?v=2 для сброса кэша -->
     <meta property="og:image" content="https://entheo-breath.vercel.app/og-banner.png?v=2" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
-    <!-- Twitter (Forces Large Image) -->
+    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://entheo-breath.vercel.app/" />
     <meta property="twitter:title" content="EntheoBreath" />
@@ -33,7 +31,6 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
-    <!-- Updated Meta Tags for PWA -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-touch-fullscreen" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -59,8 +56,8 @@
               display: ['Space Grotesk', 'sans-serif'],
             },
             colors: {
-              'zen-dark': '#050505',
-              'zen-card': '#0f0f10',
+              'zen-dark': '#000000', /* True Black for OLED */
+              'zen-card': '#1c1c1e', /* Apple Dark Gray */
               'zen-accent': '#22d3ee',
               'premium-purple': '#7C3AED',
               'premium-gold': '#F59E0B',
@@ -70,22 +67,13 @@
               'glow-purple': '0 0 30px rgba(124, 58, 237, 0.4)',
               'glow-gold': '0 0 30px rgba(245, 158, 11, 0.3)',
               'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
-              'glass-inset': 'inset 0 0 20px rgba(255, 255, 255, 0.05)',
             },
             animation: {
               'pulse-slow': 'pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'fade-in': 'fadeIn 1s cubic-bezier(0.16, 1, 0.3, 1)',
-              'fade-in-up': 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1)',
-              'float': 'float 8s ease-in-out infinite',
-              'flow': 'flow 3s linear infinite',
-              'aurora': 'aurora 25s linear infinite',
-              'mushroom-breath': 'mushroomBreath 6s ease-in-out infinite',
-              'mycelium-pulse': 'myceliumPulse 4s ease-in-out infinite',
-              'spores': 'spores 5s linear infinite',
+              'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+              'fade-in-up': 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+              'shimmer-slow': 'shimmer 3s linear infinite',
               'orbit': 'orbit 12s linear infinite',
-              'orbit-reverse': 'orbitReverse 15s linear infinite',
-              'shimmer': 'shimmer 2s linear infinite',
-              'shimmer-slow': 'shimmer 3s linear infinite', // NEW PREMIUM SHIMMER
             },
             keyframes: {
               fadeIn: {
@@ -96,39 +84,9 @@
                 '0%': { opacity: '0', transform: 'translateY(20px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' }
               },
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' }
-              },
-              flow: {
-                '0%': { strokeDashoffset: '20' },
-                '100%': { strokeDashoffset: '0' }
-              },
-              aurora: {
-                '0%': { transform: 'rotate(0deg) scale(1)' },
-                '50%': { transform: 'rotate(180deg) scale(1.1)' },
-                '100%': { transform: 'rotate(360deg) scale(1)' }
-              },
-              mushroomBreath: {
-                '0%, 100%': { transform: 'scale(1)' },
-                '50%': { transform: 'scale(1.05)' } 
-              },
-              myceliumPulse: {
-                '0%, 100%': { opacity: '0.4', strokeWidth: '1' },
-                '50%': { opacity: '1', strokeWidth: '1.5' }
-              },
-              spores: {
-                '0%': { transform: 'translate(0, 0)', opacity: '0' },
-                '20%': { opacity: '0.8' },
-                '100%': { transform: 'translate(40px, -15px)', opacity: '0' }
-              },
               orbit: {
                 '0%': { transform: 'rotate(0deg)' },
                 '100%': { transform: 'rotate(360deg)' }
-              },
-              orbitReverse: {
-                '0%': { transform: 'rotate(360deg)' },
-                '100%': { transform: 'rotate(0deg)' }
               },
               shimmer: {
                 '0%': { backgroundPosition: '200% 0' },
@@ -140,14 +98,38 @@
       }
     </script>
     <style>
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+        --sar: env(safe-area-inset-right);
+      }
+
+      /* Frontend Zen: Stable Scrollbar Gutter to prevent layout jumps */
+      html {
+        scrollbar-gutter: stable;
+      }
+
+      /* Apple Vibe: Custom Selection Color */
+      ::selection {
+        background-color: rgba(34, 211, 238, 0.3); /* Zen Accent low opacity */
+        color: white;
+      }
+
       body {
-        @apply bg-slate-50 text-gray-900 dark:bg-[#050505] dark:text-gray-100 transition-colors duration-700 font-sans antialiased;
-        overscroll-behavior-y: none; /* PREVENTS "BOUNCE" SCROLL ON MOBILE */
+        @apply bg-[#000000] text-gray-900 dark:text-gray-100 transition-colors duration-700 font-sans antialiased;
+        /* PREVENT DOUBLE SCROLLBARS: Lock body size */
+        height: 100dvh;
+        width: 100vw;
+        overflow: hidden; 
+        overscroll-behavior: none;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        user-select: none;
+        -webkit-user-select: none;
       }
       
-      /* Cinematic Noise Texture - Ultra Fine & Subtle */
+      /* Cinematic Noise Texture */
       .bg-noise {
         position: fixed;
         top: 0;
@@ -161,81 +143,41 @@
         mix-blend-mode: overlay;
       }
 
-      /* Smooth Scroll */
-      html {
-        /* scroll-behavior: smooth; -- REMOVED FOR LENIS */
-        overscroll-behavior-y: none;
+      /* --- IOS STYLE SCROLLBAR --- */
+      /* Thin, transparent track, rounded thumb */
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
       }
       
-      html.lenis, html.lenis body {
-        height: auto;
-      }
-
-      .lenis.lenis-smooth {
-        scroll-behavior: auto !important;
-      }
-
-      .lenis.lenis-smooth [data-lenis-prevent] {
-        overscroll-behavior: contain;
-      }
-
-      .lenis.lenis-stopped {
-        overflow: hidden;
-      }
-
-      .lenis.lenis-scrolling iframe {
-        pointer-events: none;
-      }
-
-      /* Premium Selection */
-      ::selection {
-        background: rgba(124, 58, 237, 0.3); /* Purple tint */
-        color: #fff;
-      }
-
-      /* Glass Scrollbar */
       .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
+        width: 4px; /* Very thin */
+        height: 4px;
       }
+      
       .custom-scrollbar::-webkit-scrollbar-track {
         background: transparent;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(124, 58, 237, 0.2);
-        border-radius: 10px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(124, 58, 237, 0.5); /* Purple hover */
-      }
-
-      /* Card Spotlight Effect Utilities */
-      .spotlight-card {
-        position: relative;
-        overflow: hidden;
-      }
-      /* Inner Glow on Hover */
-      .spotlight-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: radial-gradient(
-          600px circle at var(--mouse-x) var(--mouse-y),
-          rgba(255, 255, 255, 0.06),
-          transparent 40%
-        );
-        opacity: 0;
-        transition: opacity 0.5s ease;
-        pointer-events: none;
-        z-index: 3;
-      }
-      .spotlight-card:hover::before {
-        opacity: 1;
+        margin-block: 4px;
       }
       
-      /* Typography enhancements */
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2); /* Subtle gray */
+        border-radius: 100vh;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.4);
+      }
+
+      /* Hide scrollbar utility */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
       .text-glow {
         text-shadow: 0 0 20px rgba(255,255,255,0.3);
       }

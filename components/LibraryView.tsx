@@ -29,7 +29,6 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
         let patterns = DEFAULT_PATTERNS;
         
         // 1. Tag Filter
-        // Note: Logic is mutually exclusive now. If a tag is selected, we filter by tag ONLY (Category is implicitly 'All' conceptually)
         if (selectedTag) {
             const QUICK_FILTERS_MAP: Record<string, string[]> = {
                 'wakeup': ['wakeup', 'power', 'morning'],
@@ -56,18 +55,14 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
         }
 
         // 3. Category Filter
-        // Applies ONLY if no tag is selected (Mutually Exclusive behavior)
         if (selectedTag === null) {
             if (selectedCategory === 'Favorites') {
                 patterns = patterns.filter(p => favorites.includes(p.id));
             } else if (selectedCategory === 'AuthorChoice') {
-                // Filter
                 patterns = patterns.filter(p => POWER_PACK_IDS.includes(p.id));
-                // Sort strictly by the POWER_PACK_IDS order
                 patterns.sort((a, b) => {
                     return POWER_PACK_IDS.indexOf(a.id) - POWER_PACK_IDS.indexOf(b.id);
                 });
-                // Return as a SINGLE group to avoid scattering them across original categories
                 return { 'AuthorChoice': patterns };
             } else if (selectedCategory !== 'All') {
                 patterns = patterns.filter(p => p.category === selectedCategory);
@@ -83,13 +78,11 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
     }, [searchQuery, selectedCategory, favorites, selectedTag]);
 
     // HANDLERS FOR MUTUAL EXCLUSIVITY
-    // Clicking a category clears the mood tag
     const handleCategoryChange = (cat: string) => {
         setSelectedCategory(cat);
         setSelectedTag(null); 
     };
 
-    // Clicking a mood tag clears the category to 'All'
     const handleTagSelect = (tag: string | null) => {
         setSelectedTag(tag);
         if (tag) {
@@ -98,7 +91,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
     };
 
     return (
-        <div className="animate-fade-in px-4 py-8 md:p-10 pb-32">
+        <div className="animate-fade-in px-4 py-8 md:p-10 pb-48">
             <div className="max-w-[1600px] mx-auto">
                 
                 <LibraryHeader 
@@ -113,7 +106,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
 
                 {/* UX EXPLANATION FOR AUTHOR CHOICE */}
                 {selectedCategory === 'AuthorChoice' && !selectedTag && (
-                    <div className="max-w-3xl mx-auto mb-12 text-center animate-fade-in">
+                    <div className="max-w-3xl mx-auto mb-12 text-center animate-fade-in mt-8">
                         <div className="inline-block p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 to-orange-600/10 border border-amber-500/20 backdrop-blur-md shadow-[0_0_30px_rgba(245,158,11,0.1)]">
                             <h3 className="text-xl font-display font-bold text-amber-500 mb-2">Золотой Стандарт</h3>
                             <p className="text-amber-800 dark:text-amber-200 font-medium text-sm md:text-base leading-relaxed opacity-80">
@@ -124,13 +117,13 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
                 )}
                 
                 {/* GRID SECTION */}
-                <div className="space-y-12">
+                <div className="space-y-16 mt-8">
                     {(Object.entries(filteredGroupedPatterns) as [string, BreathingPattern[]][]).map(([category, patterns], catIdx) => (
                         <div key={category} className="animate-fade-in-up" style={{ animationDelay: `${catIdx * 100}ms` }}>
                             
                             {/* Category Title - Hide for AuthorChoice as we have a custom header above */}
                             {category !== 'AuthorChoice' && (
-                                <div className="flex items-center gap-4 mb-6 px-2">
+                                <div className="flex items-center gap-4 mb-8 px-2">
                                     <div className="w-10 h-10 rounded-xl bg-cyan-100/50 dark:bg-white/5 flex items-center justify-center border border-cyan-200/50 dark:border-white/5 text-cyan-600 dark:text-zen-accent text-lg shadow-sm backdrop-blur-sm">
                                         <i className={`fas fa-${CATEGORY_ICONS[category] || 'wind'}`}></i>
                                     </div>
@@ -141,7 +134,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
                             )}
                             
                             {/* Cards Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {patterns.map((p) => (
                                     <TechniqueCard 
                                         key={p.id} 
@@ -149,6 +142,7 @@ const LibraryView: React.FC<LibraryViewProps> = ({ selectPattern, favorites, tog
                                         onClick={() => selectPattern(p)}
                                         isFavorite={favorites.includes(p.id)}
                                         onToggleFavorite={toggleFavorite}
+                                        searchQuery={searchQuery} // Pass highlight query
                                     />
                                 ))}
                             </div>

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
+const MotionDiv = motion.div as any;
+
 const VIDEO_DATA = {
     ru: {
         id: 'mD3QwerSmLs',
@@ -55,7 +57,7 @@ const WimHofGuide: React.FC<WimHofGuideProps> = ({ onStartPractice }) => {
 
                 {/* 2. LANGUAGE CONTROLS */}
                 <div className="bg-white/5 border border-white/5 p-1.5 rounded-2xl flex relative">
-                    <motion.div 
+                    <MotionDiv 
                         className="absolute top-1.5 bottom-1.5 rounded-xl bg-white/10 border border-white/5 shadow-inner"
                         layoutId="activeLangTabVideo"
                         initial={false}
