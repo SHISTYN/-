@@ -46,7 +46,8 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
         pathLength: 0,
         pathOffset: 0,
         color: COLOR_INHALE,
-        opacity: 0
+        opacity: 0,
+        strokeWidth: 0
     };
 
     let leftState = { ...emptyState };
@@ -70,7 +71,10 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
         targetState.pathOffset = offset;
         targetState.color = color;
         // HIDE if length is very small to prevent dot artifacts at 0 or 1 offset
-        targetState.opacity = length > 0.01 ? 1 : 0;
+        // Increased threshold to 0.02 to ensure it hides before phase switch
+        const isVisible = length > 0.02;
+        targetState.opacity = isVisible ? 1 : 0;
+        targetState.strokeWidth = isVisible ? STROKE_WIDTH : 0;
     };
 
     switch (phase) {
@@ -124,7 +128,7 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
                 setVisuals(rightState, drainProgress, COLOR_EXHALE, 0);
 
                 // Inactive Side: Left (Just finished holding UP)
-                // FIX: Keep offset at 1 (top) to prevent jump glitch at bottom
+                // Offset 1, Length 0. Explicitly handled by setVisuals to be invisible (strokeWidth 0).
                 setVisuals(leftState, 0, COLOR_HOLD, 1);
             } else {
                 mainText = "ВЫДОХ ЛЕВОЙ";
@@ -135,7 +139,7 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
                 setVisuals(leftState, drainProgress, COLOR_EXHALE, 0);
 
                 // Inactive Side: Right (Just finished holding UP)
-                // FIX: Keep offset at 1 (top) to prevent jump glitch at bottom
+                // Offset 1, Length 0. Explicitly handled by setVisuals to be invisible (strokeWidth 0).
                 setVisuals(rightState, 0, COLOR_HOLD, 1);
             }
             break;
@@ -151,8 +155,9 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
     const transitionConfig = {
         pathLength: { duration: 0, ease: "linear" }, 
         pathOffset: { duration: 0, ease: "linear" },
-        stroke: { duration: 0.2 }, // Slightly faster color transition
-        opacity: { duration: 0.1 }, // Fast fade in/out
+        stroke: { duration: 0.2 }, 
+        opacity: { duration: 0.1 }, 
+        strokeWidth: { duration: 0 } // Instant width change to prevent artifacts
     };
 
     return (
@@ -180,7 +185,6 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
                     <MotionPath
                         d={leftPath}
                         fill="none"
-                        strokeWidth={STROKE_WIDTH}
                         strokeLinecap="round"
                         filter="url(#neonGlow)"
                         initial={{ pathLength: 0 }}
@@ -189,6 +193,7 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
                             pathLength: leftState.pathLength,
                             pathOffset: leftState.pathOffset || 0,
                             opacity: leftState.opacity,
+                            strokeWidth: leftState.strokeWidth ?? 0
                         }}
                         transition={transitionConfig}
                     />
@@ -197,7 +202,6 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
                     <MotionPath
                         d={rightPath}
                         fill="none"
-                        strokeWidth={STROKE_WIDTH}
                         strokeLinecap="round"
                         filter="url(#neonGlow)"
                         initial={{ pathLength: 0 }}
@@ -206,6 +210,7 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
                             pathLength: rightState.pathLength,
                             pathOffset: rightState.pathOffset || 0,
                             opacity: rightState.opacity,
+                            strokeWidth: rightState.strokeWidth ?? 0
                         }}
                         transition={transitionConfig}
                     />
