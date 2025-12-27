@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from 'react';
 import { BreathState, BreathingPattern, BreathingPhase } from './types';
 import { DEFAULT_PATTERNS } from './constants';
@@ -7,9 +8,9 @@ import SplashScreen from './components/SplashScreen';
 import { Header } from './components/layout/Header';
 import { useAudioSystem } from './hooks/useAudioSystem';
 import { useUserProgress } from './hooks/useUserProgress';
+import { useAudioEngine } from './context/AudioContext';
 
 // --- ROBUST LAZY LOADING HELPER ---
-// Automatically reloads the page once if a chunk fails to load (e.g. after a new deployment)
 const lazyWithRetry = (componentImport: () => Promise<any>) =>
   lazy(async () => {
     const pageHasAlreadyBeenForceRefreshed = JSON.parse(
@@ -18,22 +19,19 @@ const lazyWithRetry = (componentImport: () => Promise<any>) =>
 
     try {
       const component = await componentImport();
-      // If successful, reset the flag so next error can trigger refresh
       window.sessionStorage.setItem('entheo-retry-refresh', 'false');
       return component;
     } catch (error: any) {
       console.error("Lazy load error:", error);
-      // Check for fetch/chunk errors
       if (
           !pageHasAlreadyBeenForceRefreshed && 
           (error.message?.includes("Failed to fetch") || error.message?.includes("Importing a module"))
       ) {
          window.sessionStorage.setItem('entheo-retry-refresh', 'true');
          window.location.reload();
-         // Return a temporary placeholder while reloading
          return { default: () => <div className="h-full flex items-center justify-center text-sm opacity-50 animate-pulse">Обновление версии...</div> };
       }
-      throw error; // Propagate to ErrorBoundary if we already tried refreshing
+      throw error;
     }
   });
 
@@ -53,7 +51,6 @@ type ThemeMode = 'dark' | 'light';
 type ExecutionMode = 'timer' | 'stopwatch';
 type ViewState = 'library' | 'timer';
 
-// FIXED: Increased height to match Anuloma Viloma to prevent layout jump on load
 const LoadingFallback = () => (
   <div className="w-full h-full flex items-center justify-center min-h-[450px]">
     <div className="w-6 h-6 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
@@ -62,6 +59,9 @@ const LoadingFallback = () => (
 
 const App: React.FC = () => {
   const { favorites, toggleFavorite } = useUserProgress();
+  
+  // Audio Context Connection
+  const { setTimerActive } = useAudioEngine();
 
   // --- State ---
   const [activePattern, setActivePattern] = useState<BreathingPattern>(DEFAULT_PATTERNS[0]);
@@ -84,6 +84,11 @@ const App: React.FC = () => {
     isPaused: false,
     sessionResults: []
   });
+
+  // Sync Timer Active state to Audio Engine (for Playback Mode)
+  useEffect(() => {
+    setTimerActive(timerState.isActive && !timerState.isPaused);
+  }, [timerState.isActive, timerState.isPaused, setTimerActive]);
 
   // Analysis State
   const [isAnalysisOpen, setAnalysisOpen] = useState(false);
@@ -365,7 +370,8 @@ const App: React.FC = () => {
   };
 
   const isWimHof = activePattern.mode === 'wim-hof';
-  const isAnuloma = activePattern.id === 'anuloma-viloma-base';
+  // FIX: Используем OR для проверки обеих техник
+  const isAnulomaOrNadi = activePattern.id === 'anuloma-viloma-base' || activePattern.id === 'nadi-shodhana';
   const isManual = activePattern.mode === 'manual';
   const isHolotropic = activePattern.id === 'holotropic';
 
@@ -416,7 +422,7 @@ const App: React.FC = () => {
                         <div className={`absolute inset-0 -mx-4 lg:mx-0 transition-opacity duration-1000 z-0 pointer-events-none rounded-3xl ${timerState.isActive ? 'opacity-30' : 'opacity-0'}`} style={{ background: 'radial-gradient(circle at center, rgba(34, 211, 238, 0.15) 0%, rgba(0,0,0,0) 70%)' }}></div>
                         
                         {/* Mode Switcher */}
-                        {!isAnuloma && !isWimHof && !isManual && !isHolotropic && (
+                        {!isAnulomaOrNadi && !isWimHof && !isManual && !isHolotropic && (
                             <div className="w-full flex justify-center py-2 shrink-0 relative z-10 mb-2">
                                 <div className="flex items-center justify-center p-1 bg-zinc-100 dark:bg-white/5 rounded-full backdrop-blur-md border border-zinc-200 dark:border-white/10 scale-90 shadow-sm">
                                     <button onClick={() => handleModeSwitch('timer')} className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all ${executionMode === 'timer' ? 'bg-white dark:bg-black text-black dark:text-white shadow' : 'text-gray-500'}`}>Таймер</button>
@@ -446,7 +452,7 @@ const App: React.FC = () => {
                                     <div className="w-full max-w-2xl flex justify-center">
                                         <WimHofInterface pattern={activePattern} onExit={() => setView('library')} />
                                     </div>
-                                ) : isAnuloma ? (
+                                ) : isAnulomaOrNadi ? (
                                     <div className="w-full flex-1 flex items-center justify-center min-h-0">
                                         <AnulomaVilomaInterface 
                                             phase={timerState.currentPhase} 

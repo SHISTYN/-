@@ -1,21 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { 
-  Music, 
-  Menu, 
-  X, 
-  Moon, 
-  Sun, 
-  Share2, 
-  Download,
-  BookOpen,
-  Library,
-  Sparkles
+  Music, Menu, X, Moon, Sun, Share2, Download, BookOpen, Library,
+  Sparkles, Waves, Brain, PlayCircle, PauseCircle, Infinity as InfinityIcon, Clock,
+  Volume2, CloudRain, Bell, Drum, CircleDot, Wind, Zap, Sliders, Radio, Gem
 } from 'lucide-react';
-import { SoundMode } from '../../hooks/useAudioSystem';
 import { PHILOSOPHY_CONTENT } from '../../constants';
 import EntheoLogo from '../EntheoLogo';
+import { useAudioEngine, SolfeggioFreq, PlaybackMode, NoiseColor } from '../../context/AudioContext';
+import { SoundMode } from '../../hooks/useAudioSystem';
 
 const MotionHeader = motion.header as any;
 const MotionDiv = motion.div as any;
@@ -27,16 +22,35 @@ interface HeaderProps {
     toggleTheme: () => void;
     deferredPrompt: any;
     handleInstallClick: () => void;
-    soundMode: SoundMode;
-    changeSoundMode: (m: SoundMode) => void;
     handleShare: () => void;
     setShowMobileFaq: (v: boolean) => void;
+    soundMode: SoundMode;
+    changeSoundMode: (m: SoundMode) => void;
 }
 
 const NAV_ITEMS = [
   { id: 'library', label: 'Библиотека', icon: Library },
   { id: 'philosophy', label: 'Философия', icon: BookOpen },
 ] as const;
+
+const SOLFEGGIO_LIST: { freq: SolfeggioFreq; label: string; desc: string }[] = [
+    { freq: 396, label: '396 Гц', desc: 'Освобождение от вины и страха' },
+    { freq: 417, label: '417 Гц', desc: 'Нейтрализация и перемены' },
+    { freq: 432, label: '432 Гц', desc: 'Гармония Вселенной' },
+    { freq: 528, label: '528 Гц', desc: 'Трансформация ДНК' },
+    { freq: 639, label: '639 Гц', desc: 'Связь и отношения' },
+    { freq: 741, label: '741 Гц', desc: 'Пробуждение интуиции' },
+    { freq: 852, label: '852 Гц', desc: 'Духовный порядок' },
+];
+
+const TIMER_SOUNDS: { id: SoundMode; label: string; icon: any }[] = [
+    { id: 'mute', label: 'Тишина', icon: Volume2 },
+    { id: 'bell', label: 'Колокольчик', icon: Bell },
+    { id: 'hang', label: 'Ханг (Hang)', icon: Drum },
+    { id: 'bowl', label: 'Поющая Чаша', icon: CircleDot },
+    { id: 'om', label: 'ОМ (Вибрация)', icon: Sparkles },
+    { id: 'rain', label: 'Дождь (Стик)', icon: CloudRain },
+];
 
 export const Header: React.FC<HeaderProps> = ({
     view,
@@ -45,15 +59,25 @@ export const Header: React.FC<HeaderProps> = ({
     toggleTheme,
     deferredPrompt,
     handleInstallClick,
-    soundMode,
-    changeSoundMode,
     handleShare,
-    setShowMobileFaq
+    setShowMobileFaq,
+    soundMode,
+    changeSoundMode
 }) => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSoundMenuOpen, setIsSoundMenuOpen] = useState(false);
     const [isPhilosophyOpen, setIsPhilosophyOpen] = useState(false);
+    
+    // Audio Engine Connection
+    const { 
+        activeBinaural, toggleBinaural, 
+        activeSolfeggio, setSolfeggio,
+        activeCrystalMode, toggleCrystalMode,
+        playbackMode, setPlaybackMode,
+        activeAmbience, toggleAmbience, windIntensity, setWindIntensity,
+        activeNoise, toggleNoise, noiseColor, setNoiseColor
+    } = useAudioEngine();
 
     // Scroll Effect
     useEffect(() => {
@@ -71,14 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
         }
     };
 
-    const soundOptions: { id: SoundMode; label: string }[] = [
-        { id: 'mute', label: 'Без звука' },
-        { id: 'bell', label: 'Колокольчик' },
-        { id: 'hang', label: 'Ханг' },
-        { id: 'bowl', label: 'Чаша' },
-        { id: 'om', label: 'Ом' },
-        { id: 'rain', label: 'Дождь' },
-    ];
+    const isAudioActive = activeBinaural !== 'none' || activeSolfeggio !== 0 || activeAmbience || activeNoise || activeCrystalMode;
 
     return (
         <>
@@ -118,7 +135,6 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* 2. NAVIGATION (CENTER) */}
                 <nav className="hidden md:flex items-center absolute left-1/2 -translate-x-1/2 bg-white/5 rounded-full p-1 border border-white/5">
                     {NAV_ITEMS.map((item) => {
-                        // Fix for type overlap error: Cast item.id to string for comparison or check explicitly
                         const isActive = (view === (item.id as string)) && !isPhilosophyOpen && (item.id !== 'philosophy');
                         
                         return (
@@ -155,12 +171,12 @@ export const Header: React.FC<HeaderProps> = ({
                         <button 
                             onClick={() => setIsSoundMenuOpen(!isSoundMenuOpen)}
                             className={`w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all ${
-                                soundMode !== 'mute' 
+                                isAudioActive
                                 ? 'text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 shadow-glow-cyan' 
                                 : 'text-zinc-500 hover:text-white hover:bg-white/5'
                             }`}
                         >
-                            <Music size={18} />
+                            <Music size={18} className={isAudioActive ? 'animate-pulse' : ''} />
                         </button>
 
                         <AnimatePresence>
@@ -171,18 +187,204 @@ export const Header: React.FC<HeaderProps> = ({
                                     initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                    className="absolute right-0 top-full mt-3 w-40 bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-20 backdrop-blur-xl"
+                                    className="absolute right-0 top-full mt-3 w-80 bg-[#1c1c1e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-20 backdrop-blur-xl max-h-[85vh] flex flex-col"
                                 >
-                                    {soundOptions.map((opt) => (
-                                        <button
-                                            key={opt.id}
-                                            onClick={() => { changeSoundMode(opt.id); setIsSoundMenuOpen(false); }}
-                                            className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-wide flex items-center gap-2 hover:bg-white/5 transition-colors ${soundMode === opt.id ? 'text-cyan-400' : 'text-zinc-400'}`}
+                                    {/* Playback Mode Selector */}
+                                    <div className="p-3 bg-black/40 border-b border-white/5 flex gap-2">
+                                        <button 
+                                            onClick={() => setPlaybackMode('always')}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wide flex items-center justify-center gap-2 transition-all ${playbackMode === 'always' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'bg-white/5 text-zinc-500'}`}
                                         >
-                                            {soundMode === opt.id && <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_cyan]" />}
-                                            {opt.label}
+                                            <InfinityIcon size={12} /> Всегда
                                         </button>
-                                    ))}
+                                        <button 
+                                            onClick={() => setPlaybackMode('practice_only')}
+                                            className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wide flex items-center justify-center gap-2 transition-all ${playbackMode === 'practice_only' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-white/5 text-zinc-500'}`}
+                                        >
+                                            <Clock size={12} /> В таймере
+                                        </button>
+                                    </div>
+
+                                    <div className="overflow-y-auto custom-scrollbar">
+                                        
+                                        {/* SECTION 1: NATURE & ATMOSPHERE */}
+                                        <div className="bg-black/20 border-b border-white/5 pb-2">
+                                            <div className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-500/70">
+                                                Атмосфера
+                                            </div>
+
+                                            {/* CRYSTAL BOWLS GENERATIVE */}
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); toggleCrystalMode(); }}
+                                                className={`w-full text-left px-5 py-3.5 text-sm font-bold flex items-center justify-between transition-colors group relative ${
+                                                    activeCrystalMode 
+                                                    ? 'bg-purple-500/10 text-purple-300' 
+                                                    : 'hover:bg-white/5 text-gray-500 hover:text-white'
+                                                }`}
+                                            >
+                                                {activeCrystalMode && <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500 shadow-[0_0_10px_purple]"></div>}
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-6 text-center"><Gem size={18} className={activeCrystalMode ? 'animate-pulse' : ''} /></div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium bg-gradient-to-r from-purple-300 to-cyan-300 bg-clip-text text-transparent">Хрустальная Сессия</span>
+                                                        <span className="text-[10px] text-gray-400 font-normal">Генеративные чаши (Live)</span>
+                                                    </div>
+                                                </div>
+                                                <div className="opacity-50 group-hover:opacity-100">{activeCrystalMode ? <PauseCircle size={16} /> : <PlayCircle size={16} />}</div>
+                                            </button>
+                                            
+                                            {/* WIND GENERATOR + SLIDER */}
+                                            <div className="relative">
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); toggleAmbience(); }}
+                                                    className={`w-full text-left px-5 py-3.5 text-sm font-bold flex items-center justify-between transition-colors group relative ${
+                                                        activeAmbience 
+                                                        ? 'bg-cyan-50 dark:bg-zen-accent/10 text-cyan-700 dark:text-zen-accent' 
+                                                        : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                                                    }`}
+                                                >
+                                                    {activeAmbience && <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></div>}
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-6 text-center"><Wind size={18} className={activeAmbience ? 'animate-pulse' : ''} /></div>
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">Ветер (Природа)</span>
+                                                            <span className="text-[10px] opacity-60 font-normal">Генеративный поток</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="opacity-50 group-hover:opacity-100">{activeAmbience ? <PauseCircle size={16} /> : <PlayCircle size={16} />}</div>
+                                                </button>
+                                                {/* Wind Intensity Slider */}
+                                                {activeAmbience && (
+                                                    <div className="px-5 pb-3 pt-0 bg-cyan-50 dark:bg-zen-accent/10 animate-fade-in">
+                                                        <div className="flex items-center gap-3">
+                                                            <Sliders size={12} className="text-cyan-600/50" />
+                                                            <input 
+                                                                type="range" 
+                                                                min="0" max="1" step="0.05"
+                                                                value={windIntensity}
+                                                                onChange={(e) => setWindIntensity(parseFloat(e.target.value))}
+                                                                className="w-full h-1 bg-cyan-200 dark:bg-cyan-900 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* STATIC NOISE GENERATOR + COLOR PICKER */}
+                                            <div className="relative">
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); toggleNoise(); }}
+                                                    className={`w-full text-left px-5 py-3.5 text-sm font-bold flex items-center justify-between transition-colors group relative ${
+                                                        activeNoise 
+                                                        ? 'bg-stone-50 dark:bg-white/10 text-stone-700 dark:text-white' 
+                                                        : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                                                    }`}
+                                                >
+                                                    {activeNoise && <div className="absolute left-0 top-0 bottom-0 w-1 bg-white shadow-[0_0_10px_white]"></div>}
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-6 text-center"><Radio size={18} className={activeNoise ? 'animate-pulse' : ''} /></div>
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">Шум (Фокус)</span>
+                                                            <span className="text-[10px] opacity-60 font-normal">Спектральный шум</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="opacity-50 group-hover:opacity-100">{activeNoise ? <PauseCircle size={16} /> : <PlayCircle size={16} />}</div>
+                                                </button>
+                                                
+                                                {/* Noise Color Selector */}
+                                                {activeNoise && (
+                                                    <div className="px-5 pb-3 pt-1 bg-stone-50 dark:bg-white/10 animate-fade-in flex gap-2">
+                                                        {(['brown', 'pink', 'white'] as NoiseColor[]).map((c) => (
+                                                            <button 
+                                                                key={c}
+                                                                onClick={() => setNoiseColor(c)}
+                                                                className={`flex-1 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                                                                    noiseColor === c 
+                                                                    ? 'bg-white text-black border-white' 
+                                                                    : 'bg-transparent text-gray-400 border-gray-600 hover:border-gray-400'
+                                                                }`}
+                                                            >
+                                                                {c === 'brown' ? 'Глуб' : c === 'pink' ? 'Баланс' : 'Высок'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Binaural Controls */}
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); toggleBinaural('theta'); }}
+                                                className={`w-full text-left px-5 py-3.5 text-sm font-bold flex items-center justify-between transition-colors group relative ${activeBinaural === 'theta' ? 'bg-purple-500/10 text-purple-400' : 'hover:bg-white/5 text-gray-500 hover:text-white'}`}
+                                            >
+                                                {activeBinaural === 'theta' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500 shadow-[0_0_10px_purple]"></div>}
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-6 text-center"><Waves size={18} /></div>
+                                                    <div className="flex flex-col">
+                                                        <span>Theta (4Hz)</span>
+                                                        <span className="text-[10px] opacity-50 font-normal">Глубокая медитация</span>
+                                                    </div>
+                                                </div>
+                                                <div className="opacity-50 group-hover:opacity-100">{activeBinaural === 'theta' ? <PauseCircle size={16}/> : <PlayCircle size={16}/>}</div>
+                                            </button>
+                                            
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); toggleBinaural('alpha'); }}
+                                                className={`w-full text-left px-5 py-3.5 text-sm font-bold flex items-center justify-between transition-colors group relative ${activeBinaural === 'alpha' ? 'bg-blue-500/10 text-blue-400' : 'hover:bg-white/5 text-gray-500 hover:text-white'}`}
+                                            >
+                                                {activeBinaural === 'alpha' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[0_0_10px_blue]"></div>}
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-6 text-center"><Brain size={18} /></div>
+                                                    <div className="flex flex-col">
+                                                        <span>Alpha (10Hz)</span>
+                                                        <span className="text-[10px] opacity-50 font-normal">Релакс и фокус</span>
+                                                    </div>
+                                                </div>
+                                                <div className="opacity-50 group-hover:opacity-100">{activeBinaural === 'alpha' ? <PauseCircle size={16}/> : <PlayCircle size={16}/>}</div>
+                                            </button>
+                                        </div>
+
+                                        {/* SECTION 2: SOLFEGGIO */}
+                                        <div className="pb-2 border-b border-white/5">
+                                            <div className="px-5 py-3 mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500/70">
+                                                Сольфеджио (Тон)
+                                            </div>
+                                            {SOLFEGGIO_LIST.map((item) => (
+                                                <button
+                                                    key={item.freq}
+                                                    onClick={() => setSolfeggio(item.freq)}
+                                                    className={`w-full text-left px-5 py-3 text-xs flex items-center justify-between transition-colors group ${activeSolfeggio === item.freq ? 'bg-amber-500/10 text-amber-400' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                                >
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-sm tracking-wide">{item.label}</span>
+                                                        <span className="text-[10px] opacity-60">{item.desc}</span>
+                                                    </div>
+                                                    <div className={`transition-opacity ${activeSolfeggio === item.freq ? 'opacity-100' : 'opacity-30 group-hover:opacity-100'}`}>
+                                                        {activeSolfeggio === item.freq ? <PauseCircle size={16} /> : <PlayCircle size={16} />}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* SECTION 3: TIMER SOUNDS */}
+                                        <div className="pb-4">
+                                            <div className="px-5 py-3 mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-500/70">
+                                                Звук Таймера (Тик)
+                                            </div>
+                                            {TIMER_SOUNDS.map((snd) => (
+                                                <button
+                                                    key={snd.id}
+                                                    onClick={() => changeSoundMode(snd.id)}
+                                                    className={`w-full text-left px-5 py-3 text-xs flex items-center gap-3 transition-colors ${soundMode === snd.id ? 'bg-emerald-500/10 text-emerald-400' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}
+                                                >
+                                                    <div className="w-4 flex justify-center">
+                                                        <snd.icon size={14} />
+                                                    </div>
+                                                    <span className="font-bold tracking-wide">{snd.label}</span>
+                                                    {soundMode === snd.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </MotionDiv>
                                 </>
                             )}
@@ -217,7 +419,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
         </MotionHeader>
 
-        {/* --- PHILOSOPHY MODAL (PORTAL) --- */}
+        {/* --- PHILOSOPHY MODAL --- */}
         <AnimatePresence>
             {isPhilosophyOpen && (
                 <MotionDiv 
@@ -329,5 +531,3 @@ export const Header: React.FC<HeaderProps> = ({
         </>
     );
 };
-
-export default Header;

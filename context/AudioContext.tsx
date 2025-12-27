@@ -1,0 +1,524 @@
+
+import React, { createContext, useContext, useRef, useState, useEffect, ReactNode } from 'react';
+import * as Tone from 'tone';
+import { BinauralGenerator } from '../utils/binaural';
+
+export type PlaybackMode = 'always' | 'practice_only';
+export type SolfeggioFreq = 396 | 417 | 432 | 528 | 639 | 741 | 852 | 0;
+export type NoiseColor = 'brown' | 'pink' | 'white';
+
+interface AudioContextType {
+  isReady: boolean;
+  initializeAudio: () => Promise<void>;
+  
+  // Master Control
+  masterVolume: number;
+  setMasterVolume: (val: number) => void;
+  playbackMode: PlaybackMode;
+  setPlaybackMode: (mode: PlaybackMode) => void;
+  isTimerActive: boolean;
+  setTimerActive: (active: boolean) => void;
+
+  // Layers
+  activeBinaural: 'none' | 'theta' | 'alpha';
+  toggleBinaural: (type: 'theta' | 'alpha') => void;
+  
+  activeSolfeggio: SolfeggioFreq;
+  setSolfeggio: (freq: SolfeggioFreq) => void;
+
+  // Crystal Bowls Session (Generative)
+  activeCrystalMode: boolean;
+  toggleCrystalMode: () => void;
+
+  // Wind (Generative)
+  activeAmbience: boolean;
+  toggleAmbience: () => void;
+  windIntensity: number; // 0.0 to 1.0
+  setWindIntensity: (val: number) => void;
+
+  // Static Noise
+  activeNoise: boolean;
+  toggleNoise: () => void;
+  noiseColor: NoiseColor;
+  setNoiseColor: (color: NoiseColor) => void;
+}
+
+const AudioContext = createContext<AudioContextType | null>(null);
+
+export const useAudioEngine = () => {
+  const context = useContext(AudioContext);
+  if (!context) {
+    throw new Error('useAudioEngine must be used within an AudioProvider');
+  }
+  return context;
+};
+
+// --- CRYSTAL BOWL CLASS (HYBRID ENGINE) ---
+class CrystalBowl {
+    // 1. Rubbing Engine (Continuous)
+    private rubOsc: Tone.FMOscillator;
+    private rubTremolo: Tone.Tremolo;
+    private rubGain: Tone.Gain;
+    
+    // 2. Striking Engine (Percussive)
+    private strikeSynth: Tone.Synth;
+    
+    // 3. Common
+    private panner: Tone.Panner;
+    private filter: Tone.Filter;
+    
+    public readonly frequency: number;
+    public isRubbing: boolean = false;
+
+    constructor(freq: number, destination: Tone.ToneAudioNode) {
+        this.frequency = freq;
+
+        // --- COMMON FX ---
+        this.panner = new Tone.Panner(Math.random() * 1.4 - 0.7).connect(destination); // Random pan
+        this.filter = new Tone.Filter(3500, "lowpass", -12).connect(this.panner); // Warm glass filter
+
+        // --- RUBBING SETUP ---
+        // FM Synthesis simulates the complex overtones of glass interference
+        this.rubOsc = new Tone.FMOscillator({
+            frequency: freq,
+            type: "sine",
+            modulationType: "sine",
+            harmonicity: 1.002, // Slight detune creates the "singing" beating
+            modulationIndex: 0.5
+        });
+
+        // Tremolo simulates the stick moving around the rim (Volume wobble)
+        this.rubTremolo = new Tone.Tremolo({
+            frequency: 0.8 + Math.random(), // Unique rotation speed per bowl
+            depth: 0.4,
+            spread: 0
+        }).start();
+
+        this.rubGain = new Tone.Gain(0); // Start silent
+
+        // Chain: Osc -> Tremolo -> Gain -> Filter
+        this.rubOsc.connect(this.rubTremolo);
+        this.rubTremolo.connect(this.rubGain);
+        this.rubGain.connect(this.filter);
+        
+        this.rubOsc.start();
+
+        // --- STRIKING SETUP ---
+        // Separate synth for the "Ding" sound (Soft Mallet)
+        this.strikeSynth = new Tone.Synth({
+            oscillator: { type: "sine" }, // Pure tone
+            envelope: { 
+                attack: 0.05, // Soft hit
+                decay: 3.0,   // Long ring
+                sustain: 0.05, 
+                release: 10   // Very long tail
+            },
+            volume: -5
+        }).connect(this.filter);
+    }
+
+    // Start "Singing" (Rim rubbing)
+    startRub(fadeInTime: number = 4) {
+        if (this.isRubbing) return;
+        this.isRubbing = true;
+        
+        // Randomize dynamics slightly
+        this.rubOsc.modulationIndex.rampTo(1 + Math.random(), 5);
+        this.rubTremolo.frequency.rampTo(0.5 + Math.random() * 1.5, 10); // Change rotation speed
+        
+        this.rubGain.gain.rampTo(0.2 + Math.random() * 0.1, fadeInTime); // Fade in
+    }
+
+    // Stop "Singing"
+    stopRub(fadeOutTime: number = 5) {
+        if (!this.isRubbing) return;
+        this.isRubbing = false;
+        this.rubGain.gain.rampTo(0, fadeOutTime);
+    }
+
+    // "Ding" (Soft Strike)
+    strike(velocity: number = 1) {
+        // Slight detune for realism on impact
+        const detune = (Math.random() - 0.5) * 5; 
+        this.strikeSynth.triggerAttackRelease(this.frequency, 8, undefined, velocity);
+    }
+
+    // Clean up
+    dispose() {
+        this.rubOsc.dispose();
+        this.rubTremolo.dispose();
+        this.rubGain.dispose();
+        this.strikeSynth.dispose();
+        this.panner.dispose();
+        this.filter.dispose();
+    }
+}
+
+export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [isReady, setIsReady] = useState(false);
+  const [masterVolume, setMasterVal] = useState(0.8);
+  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>('always');
+  const [isTimerActive, setTimerActive] = useState(false);
+
+  // --- LAYERS STATE ---
+  const [activeBinaural, setActiveBinaural] = useState<'none' | 'theta' | 'alpha'>('none');
+  const [activeSolfeggio, setActiveSolfeggio] = useState<SolfeggioFreq>(0);
+  const [activeCrystalMode, setActiveCrystalMode] = useState(false);
+  
+  // Wind
+  const [activeAmbience, setActiveAmbience] = useState(false);
+  const [windIntensity, setWindIntensity] = useState(0.5);
+
+  // Noise
+  const [activeNoise, setActiveNoise] = useState(false);
+  const [noiseColor, setNoiseColor] = useState<NoiseColor>('pink');
+
+  // --- REFS (Audio Nodes) ---
+  const binauralRef = useRef<BinauralGenerator | null>(null);
+  const solfeggioOscRef = useRef<Tone.Oscillator | null>(null);
+  const solfeggioGainRef = useRef<Tone.Gain | null>(null);
+  
+  // Crystal Session Engine
+  const crystalSessionRef = useRef<{ 
+      bowls: CrystalBowl[]; 
+      reverb: Tone.Reverb; 
+      masterGain: Tone.Gain;
+      conductorLoop: number;
+  } | null>(null);
+
+  // Wind Nodes
+  const windNodesRef = useRef<{ noise: Tone.Noise; filter: Tone.AutoFilter; gain: Tone.Gain } | null>(null);
+  
+  // Noise Nodes
+  const staticNoiseRef = useRef<{ source: Tone.Noise; filter: Tone.Filter; gain: Tone.Gain } | null>(null);
+  
+  const masterGainRef = useRef<Tone.Gain | null>(null);
+
+  // --- INITIALIZATION ---
+  const initializeAudio = async () => {
+    if (isReady) return;
+    await Tone.start();
+    
+    // Compressor helps glue the layers together
+    const limiter = new Tone.Limiter(-1).toDestination();
+    const master = new Tone.Gain(1).connect(limiter);
+    masterGainRef.current = master;
+
+    binauralRef.current = new BinauralGenerator(master);
+
+    setIsReady(true);
+    console.log('🔊 Tone.js Engine Started');
+  };
+
+  // --- GLOBAL FADE LOGIC ---
+  useEffect(() => {
+    if (!masterGainRef.current) return;
+    let targetVol = 0;
+    if (playbackMode === 'always') {
+        targetVol = Tone.gainToDb(masterVolume);
+    } else {
+        targetVol = isTimerActive ? Tone.gainToDb(masterVolume) : -60;
+    }
+    masterGainRef.current.gain.rampTo(Tone.dbToGain(targetVol), 2);
+  }, [playbackMode, isTimerActive, masterVolume, isReady]);
+
+
+  // --- BINAURAL HANDLER ---
+  const toggleBinauralHandler = async (type: 'theta' | 'alpha') => {
+    await initializeAudio();
+    if (!binauralRef.current) return;
+
+    if (activeBinaural === type) {
+        binauralRef.current.stop();
+        setActiveBinaural('none');
+    } else {
+        if (type === 'theta') binauralRef.current.play(100, 4.5, -15);
+        if (type === 'alpha') binauralRef.current.play(200, 10, -18);
+        setActiveBinaural(type);
+    }
+  };
+
+  // --- SOLFEGGIO HANDLER ---
+  const setSolfeggioHandler = async (freq: SolfeggioFreq) => {
+    await initializeAudio();
+    if (activeCrystalMode && freq !== 0) {
+        toggleCrystalModeHandler(); 
+    }
+
+    if (freq === activeSolfeggio) {
+        stopSolfeggio();
+        setActiveSolfeggio(0);
+        return;
+    }
+    stopSolfeggio();
+    if (freq > 0) {
+        const osc = new Tone.Oscillator(freq, "sine");
+        const gain = new Tone.Gain(0).connect(masterGainRef.current!);
+        const reverb = new Tone.Reverb({ decay: 5, wet: 0.5 }).connect(gain);
+        osc.connect(reverb);
+        osc.start();
+        gain.gain.rampTo(0.3, 2);
+        solfeggioOscRef.current = osc;
+        solfeggioGainRef.current = gain;
+        setActiveSolfeggio(freq);
+    } else {
+        setActiveSolfeggio(0);
+    }
+  };
+
+  const stopSolfeggio = () => {
+    if (solfeggioGainRef.current) {
+        solfeggioGainRef.current.gain.rampTo(0, 1);
+        const oldOsc = solfeggioOscRef.current;
+        const oldGain = solfeggioGainRef.current;
+        setTimeout(() => { oldOsc?.stop(); oldOsc?.dispose(); oldGain?.dispose(); }, 1000);
+    }
+  };
+
+  // --- CRYSTAL BOWLS: THE ORCHESTRA ---
+  const toggleCrystalModeHandler = async () => {
+    await initializeAudio();
+    
+    // Stop single Solfeggio if active
+    if (activeSolfeggio !== 0) {
+        stopSolfeggio();
+        setActiveSolfeggio(0);
+    }
+
+    if (activeCrystalMode) {
+        // STOP SESSION
+        if (crystalSessionRef.current) {
+            Tone.Transport.clear(crystalSessionRef.current.conductorLoop);
+            crystalSessionRef.current.masterGain.gain.rampTo(0, 4); // Slow master fade
+            
+            // Fade out active bowls
+            crystalSessionRef.current.bowls.forEach(b => b.stopRub(4));
+
+            setTimeout(() => {
+                crystalSessionRef.current?.bowls.forEach(b => b.dispose());
+                crystalSessionRef.current?.reverb.dispose();
+                crystalSessionRef.current?.masterGain.dispose();
+                crystalSessionRef.current = null;
+            }, 4100);
+        }
+        setActiveCrystalMode(false);
+    } else {
+        // START SESSION
+        Tone.Transport.start();
+
+        const masterGain = new Tone.Gain(0).connect(masterGainRef.current!);
+        // Deep, expansive Cathedral Reverb
+        const reverb = new Tone.Reverb({ decay: 22, wet: 0.65, preDelay: 0.2 }).connect(masterGain);
+        await reverb.generate();
+
+        // Create the Bowl Orchestra (Solfeggio Scale)
+        const FREQS = [396, 417, 528, 639, 741, 852];
+        const bowls = FREQS.map(f => new CrystalBowl(f, reverb));
+
+        // THE CONDUCTOR LOGIC
+        // Every few seconds, makes a decision to change the soundscape
+        const conductorLoop = Tone.Transport.scheduleRepeat((time) => {
+            
+            // 1. Maintain Drones (Rubbing)
+            // Ideally 2-3 bowls singing at once creates rich harmony
+            const activeBowls = bowls.filter(b => b.isRubbing);
+            
+            if (activeBowls.length < 2) {
+                // Add a bowl
+                const inactive = bowls.filter(b => !b.isRubbing);
+                if (inactive.length > 0) {
+                    const next = inactive[Math.floor(Math.random() * inactive.length)];
+                    next.startRub(Math.random() * 3 + 3); // 3-6s fade in
+                }
+            } else if (activeBowls.length > 3) {
+                // Remove a bowl
+                const toStop = activeBowls[Math.floor(Math.random() * activeBowls.length)];
+                toStop.stopRub(Math.random() * 4 + 4); // 4-8s fade out
+            } else {
+                // Changeover (Crossfade) - 30% chance
+                if (Math.random() > 0.7) {
+                    const toStop = activeBowls[0]; // Stop oldest/random
+                    const inactive = bowls.filter(b => !b.isRubbing);
+                    if (inactive.length > 0) {
+                        const toStart = inactive[Math.floor(Math.random() * inactive.length)];
+                        toStop.stopRub(6);
+                        toStart.startRub(6);
+                    }
+                }
+            }
+
+            // 2. Random Strikes (Accents)
+            // 40% chance to gently strike a bowl (can be active or inactive)
+            if (Math.random() > 0.6) {
+                // Pick any bowl, maybe favour high ones for sparkles
+                const target = bowls[Math.floor(Math.random() * bowls.length)];
+                // Soft velocity for texture
+                const velocity = 0.2 + Math.random() * 0.4; 
+                
+                // Add delay so it doesn't happen exactly on the beat
+                const delay = Math.random() * 2; 
+                setTimeout(() => target.strike(velocity), delay * 1000);
+            }
+
+        }, "4m"); // Check every 4 measures (approx 8-10s)
+
+        // Initial Start
+        bowls[0].startRub(2); // Start root note immediately
+        setTimeout(() => bowls[2].startRub(5), 2000); // Add 528hz shortly after
+
+        masterGain.gain.rampTo(1, 3);
+        
+        crystalSessionRef.current = { bowls, reverb, masterGain, conductorLoop };
+        setActiveCrystalMode(true);
+    }
+  };
+
+
+  // --- WIND (AMBIENCE) HANDLER ---
+  const toggleAmbienceHandler = async () => {
+    await initializeAudio();
+    if (activeAmbience) {
+        if (windNodesRef.current) {
+            windNodesRef.current.gain.gain.rampTo(0, 2);
+            setTimeout(() => {
+                windNodesRef.current?.noise.stop();
+                windNodesRef.current = null;
+            }, 2000);
+        }
+        setActiveAmbience(false);
+    } else {
+        const noise = new Tone.Noise("pink").start();
+        
+        const filter = new Tone.AutoFilter({
+            frequency: 0.05 + (windIntensity * 0.55), 
+            min: 150, 
+            max: 600 + (windIntensity * 800),
+            depth: 0.6 + (windIntensity * 0.4), 
+            baseFrequency: 150, 
+            octaves: 2.5 + (windIntensity * 1.5),
+            filter: { type: "lowpass", rolloff: -24, Q: 0.5 } 
+        }).start();
+        
+        const gain = new Tone.Gain(0).connect(masterGainRef.current!);
+        noise.connect(filter);
+        filter.connect(gain);
+        
+        const targetVol = 0.2 + (windIntensity * 0.3);
+        gain.gain.rampTo(targetVol, 4);
+        
+        windNodesRef.current = { noise, filter, gain };
+        setActiveAmbience(true);
+    }
+  };
+
+  // Update Wind Parameters
+  useEffect(() => {
+      if (activeAmbience && windNodesRef.current) {
+          const { filter, gain } = windNodesRef.current;
+          const newFreq = 0.05 + (windIntensity * 0.55);
+          filter.frequency.rampTo(newFreq, 3); 
+          filter.max = 600 + (windIntensity * 800);
+          filter.octaves = 2.5 + (windIntensity * 1.5);
+          const targetVol = 0.2 + (windIntensity * 0.3);
+          gain.gain.rampTo(targetVol, 2);
+      }
+  }, [windIntensity, activeAmbience]);
+
+
+  // --- STATIC NOISE HANDLER ---
+  const toggleNoiseHandler = async () => {
+      await initializeAudio();
+      if (activeNoise) {
+          if (staticNoiseRef.current) {
+              staticNoiseRef.current.gain.gain.rampTo(0, 1);
+              setTimeout(() => {
+                  staticNoiseRef.current?.source.stop();
+                  staticNoiseRef.current = null;
+              }, 1200);
+          }
+          setActiveNoise(false);
+      } else {
+          const source = new Tone.Noise(noiseColor).start();
+          const gain = new Tone.Gain(0).connect(masterGainRef.current!);
+          
+          let cutoff = 1000;
+          if (noiseColor === 'white') cutoff = 15000;
+          if (noiseColor === 'pink') cutoff = 2000;
+          if (noiseColor === 'brown') cutoff = 600;
+
+          const filter = new Tone.Filter(cutoff, "lowpass").connect(gain);
+          source.connect(filter);
+
+          let targetVol = 0.1;
+          if (noiseColor === 'brown') targetVol = 0.4; 
+          if (noiseColor === 'pink') targetVol = 0.15;
+          if (noiseColor === 'white') targetVol = 0.08; 
+
+          gain.gain.rampTo(targetVol, 2);
+          
+          staticNoiseRef.current = { source, filter, gain };
+          setActiveNoise(true);
+      }
+  };
+
+  // Update Noise Color logic
+  useEffect(() => {
+      if (activeNoise && staticNoiseRef.current) {
+          staticNoiseRef.current.source.type = noiseColor;
+          let targetVol = 0.1;
+          let targetFreq = 1000;
+
+          if (noiseColor === 'brown') {
+              targetVol = 0.4;
+              targetFreq = 600;
+          } else if (noiseColor === 'pink') {
+              targetVol = 0.15;
+              targetFreq = 2000;
+          } else if (noiseColor === 'white') {
+              targetVol = 0.08;
+              targetFreq = 15000;
+          }
+
+          staticNoiseRef.current.gain.gain.rampTo(targetVol, 0.5);
+          staticNoiseRef.current.filter.frequency.rampTo(targetFreq, 0.5);
+      }
+  }, [noiseColor, activeNoise]);
+
+
+  return (
+    <AudioContext.Provider value={{
+      isReady,
+      initializeAudio,
+      masterVolume,
+      setMasterVolume: setMasterVal,
+      playbackMode,
+      setPlaybackMode,
+      isTimerActive,
+      setTimerActive,
+      
+      activeBinaural,
+      toggleBinaural: toggleBinauralHandler,
+      
+      activeSolfeggio,
+      setSolfeggio: setSolfeggioHandler,
+
+      // Crystal
+      activeCrystalMode,
+      toggleCrystalMode: toggleCrystalModeHandler,
+      
+      // Wind
+      activeAmbience,
+      toggleAmbience: toggleAmbienceHandler,
+      windIntensity,
+      setWindIntensity,
+
+      // Noise
+      activeNoise,
+      toggleNoise: toggleNoiseHandler,
+      noiseColor,
+      setNoiseColor
+    }}>
+      {children}
+    </AudioContext.Provider>
+  );
+};

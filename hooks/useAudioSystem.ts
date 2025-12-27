@@ -1,130 +1,130 @@
-import { useRef, useState, useEffect } from 'react';
 
-export type SoundMode = 'mute' | 'bell' | 'hang' | 'bowl' | 'gong' | 'rain' | 'om' | 'flute' | 'harp' | 'binaural_theta' | 'binaural_alpha';
+import { useRef, useState, useEffect } from 'react';
+import * as Tone from 'tone';
+
+export type SoundMode = 'mute' | 'bell' | 'hang' | 'bowl' | 'rain' | 'om' | 'gong' | 'harp' | 'flute';
 
 export const useAudioSystem = () => {
+    // Legacy state, kept for compatibility with prop types
     const [soundMode, setSoundMode] = useState<SoundMode>('bell');
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const binauralNodesRef = useRef<{
-        leftOsc: OscillatorNode | null;
-        rightOsc: OscillatorNode | null;
-        gain: GainNode | null;
-    }>({ leftOsc: null, rightOsc: null, gain: null });
-
-    const initAudio = () => {
-        if (!audioContextRef.current) {
-            audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        }
-        if (audioContextRef.current.state === 'suspended') {
-            audioContextRef.current.resume();
-        }
+    
+    const initAudio = async () => {
+        await Tone.start();
     };
 
-    const stopBinaural = () => {
-        const { leftOsc, rightOsc, gain } = binauralNodesRef.current;
-        if (gain && audioContextRef.current) {
-            const now = audioContextRef.current.currentTime;
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
-            setTimeout(() => {
-                leftOsc?.stop();
-                rightOsc?.stop();
-                leftOsc?.disconnect();
-                rightOsc?.disconnect();
-                gain.disconnect();
-            }, 1600);
-        }
-        binauralNodesRef.current = { leftOsc: null, rightOsc: null, gain: null };
-    };
-
-    const playBinauralDrone = (baseFreq: number, beatFreq: number) => {
-        initAudio();
-        const ctx = audioContextRef.current!;
-        stopBinaural();
-
-        const masterGain = ctx.createGain();
-        masterGain.gain.setValueAtTime(0, ctx.currentTime);
-        masterGain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 3); 
-        masterGain.connect(ctx.destination);
-
-        // Левое ухо (Несущая частота)
-        const leftOsc = ctx.createOscillator();
-        leftOsc.type = 'sine';
-        leftOsc.frequency.value = baseFreq;
-        const leftPan = ctx.createStereoPanner();
-        leftPan.pan.value = -1;
-        leftOsc.connect(leftPan).connect(masterGain);
-
-        // Правое ухо (Частота + Бит)
-        const rightOsc = ctx.createOscillator();
-        rightOsc.type = 'sine';
-        rightOsc.frequency.value = baseFreq + beatFreq;
-        const rightPan = ctx.createStereoPanner();
-        rightPan.pan.value = 1;
-        rightOsc.connect(rightPan).connect(masterGain);
-
-        leftOsc.start();
-        rightOsc.start();
-
-        binauralNodesRef.current = { leftOsc, rightOsc, gain: masterGain };
-    };
-
-    const playSoundEffect = (mode: SoundMode) => {
+    const playSoundEffect = async (mode: SoundMode) => {
         if (mode === 'mute') return;
-        initAudio();
-        const ctx = audioContextRef.current!;
-        const now = ctx.currentTime;
+        await Tone.start();
 
-        const createOsc = (type: OscillatorType, freq: number, gainVal: number, duration: number, delay: number = 0) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, now + delay);
-            
-            gain.gain.setValueAtTime(0, now + delay);
-            gain.gain.linearRampToValueAtTime(gainVal, now + delay + 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + duration);
-
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(now + delay);
-            osc.stop(now + delay + duration);
-        };
+        // Common Reverb
+        const reverb = new Tone.Reverb({ decay: 2.5, wet: 0.4 }).toDestination();
 
         switch(mode) {
-            case 'bell':
-                createOsc('sine', 659.25, 0.1, 3.5);
-                createOsc('sine', 1318.5, 0.03, 2.5, 0.02);
+            case 'bell': {
+                // Bright digital bell
+                const synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.01, decay: 1.2, sustain: 0, release: 1 }
+                }).connect(reverb);
+                synth.triggerAttackRelease(["C5", "E5"], "1n");
                 break;
-            case 'gong':
-                createOsc('sine', 98, 0.25, 5.0);
-                createOsc('triangle', 101, 0.1, 4.0);
+            }
+            case 'hang': {
+                // Warm hang drum
+                const synth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.02, decay: 1.5, sustain: 0, release: 1 }
+                }).connect(reverb);
+                synth.triggerAttackRelease(["A3", "C4", "E4"], "2n");
                 break;
-            case 'om':
-                createOsc('sine', 136.1, 0.15, 4.0);
+            }
+            case 'bowl': {
+                // Tibetan Singing Bowl (FM/Metal Synthesis)
+                const bowl = new Tone.MetalSynth({
+                    frequency: 200,
+                    envelope: { attack: 0.1, decay: 2.5, release: 1 },
+                    harmonicity: 3.1, // Disharmonic
+                    modulationIndex: 16,
+                    resonance: 3000,
+                    octaves: 1.0
+                }).connect(reverb);
+                // Lower pitch for bowl
+                bowl.triggerAttackRelease("G2", "1n", undefined, 0.6);
                 break;
-            case 'binaural_theta':
-                playBinauralDrone(180, 4.5); // Тета (Глубокая медитация)
+            }
+            case 'gong': {
+                 // Deep Gong Sound
+                 const gong = new Tone.MetalSynth({
+                    frequency: 200,
+                    envelope: { attack: 0.1, decay: 3.5, release: 2 },
+                    harmonicity: 5.1,
+                    modulationIndex: 32,
+                    resonance: 4000,
+                    octaves: 1.5
+                }).connect(reverb);
+                gong.triggerAttackRelease("C2", "2n", undefined, 0.8);
                 break;
-            case 'binaural_alpha':
-                playBinauralDrone(200, 10); // Альфа (Релаксация и фокус)
+            }
+            case 'rain': {
+                // Rain Stick / Water Drop Effect
+                const noise = new Tone.Noise("pink").start();
+                const filter = new Tone.Filter(1200, "lowpass").connect(reverb);
+                const env = new Tone.AmplitudeEnvelope({
+                    attack: 0.05, decay: 0.4, sustain: 0, release: 0.2
+                }).connect(filter);
+                
+                noise.connect(env);
+                env.triggerAttackRelease("4n");
+                
+                // Cleanup noise source after sound
+                setTimeout(() => {
+                    noise.stop();
+                    noise.dispose();
+                    env.dispose();
+                    filter.dispose();
+                    reverb.dispose();
+                }, 2000);
+                return; // Special return to handle manual cleanup
+            }
+            case 'om': {
+                // Deep OM Drone
+                const omSynth = new Tone.Synth({ 
+                    oscillator: { type: "fmsine", modulationType: "sine", modulationIndex: 3, harmonicity: 3.4 },
+                    envelope: { attack: 0.5, decay: 2, sustain: 0.5, release: 3 }
+                }).connect(reverb);
+                omSynth.volume.value = -8;
+                omSynth.triggerAttackRelease("C#2", "2n"); 
+                break;
+            }
+            case 'harp': {
+                // Harp Pluck
+                const harp = new Tone.PluckSynth({
+                    attackNoise: 1,
+                    dampening: 4000,
+                    resonance: 0.98
+                }).connect(reverb);
+                harp.triggerAttack("C4");
+                break;
+            }
+            case 'flute': {
+                // Wood Flute
+                const flute = new Tone.MonoSynth({
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 0.8 },
+                    filterEnvelope: { attack: 0.06, decay: 0.2, sustain: 0.5, baseFrequency: 300, octaves: 2 }
+                }).connect(reverb);
+                flute.triggerAttackRelease("A4", "8n");
+                break;
+            }
+            default:
                 break;
         }
     };
 
     const changeSoundMode = (mode: SoundMode) => {
-        initAudio();
         setSoundMode(mode);
-        if (mode.startsWith('binaural')) {
-            playSoundEffect(mode);
-        } else {
-            stopBinaural();
-            playSoundEffect(mode);
-        }
+        playSoundEffect(mode);
     };
-
-    useEffect(() => {
-        return () => stopBinaural();
-    }, []);
 
     return {
         soundMode,
