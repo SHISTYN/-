@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import EntheoLogo from './EntheoLogo';
 import { SoundMode } from '../hooks/useAudioSystem';
+import YinYangToggle from './YinYangToggle';
 
 interface NavbarProps {
     view: 'timer' | 'library';
@@ -51,7 +53,7 @@ const Navbar: React.FC<NavbarProps> = ({
     };
 
     return (
-        <nav className="w-full h-20 md:h-24 bg-white/70 dark:bg-[#050505]/60 backdrop-blur-2xl border-b border-gray-200/50 dark:border-white/5 sticky top-0 z-40 flex-shrink-0 transition-all duration-300">
+        <nav className="w-full h-20 md:h-24 bg-white/70 dark:bg-[#050505]/60 backdrop-blur-2xl border-b border-gray-200/50 dark:border-white/5 sticky top-0 z-40 flex-shrink-0 transition-colors duration-500">
             <div className="w-full px-4 md:px-6 h-full flex items-center justify-between mx-auto relative">
                 
                 <div className="flex items-center gap-3 cursor-pointer group relative flex-shrink-0" onClick={() => setView('library')}>
@@ -61,7 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({
                          <div className="hidden md:block"><EntheoLogo size={64} animated={true} idSuffix="nav-lg" /></div>
                     </div>
                     <div className="flex flex-col z-10">
-                        <h1 className="font-display font-bold text-xl md:text-3xl tracking-tight text-gray-900 dark:text-white leading-none">
+                        <h1 className="font-display font-bold text-xl md:text-3xl tracking-tight text-gray-900 dark:text-white leading-none transition-colors duration-500">
                             Entheo<span className="text-transparent bg-clip-text bg-gradient-to-r from-zen-accent via-premium-purple to-premium-gold">Breath</span>
                         </h1>
                     </div>
@@ -69,12 +71,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 
                 <div className="flex gap-2 md:gap-4 items-center relative">
                     
-                    <button 
-                        onClick={toggleTheme}
-                        className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-zen-accent dark:hover:text-white transition-all duration-300 active:scale-95 border border-transparent hover:border-white/10"
-                    >
-                        <i className={`fas fa-${theme === 'dark' ? 'sun' : 'moon'} text-lg md:text-xl`}></i>
-                    </button>
+                    <YinYangToggle theme={theme} toggleTheme={toggleTheme} />
 
                     <div className="hidden md:flex items-center gap-4">
                         {deferredPrompt && (

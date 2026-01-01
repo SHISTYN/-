@@ -240,11 +240,13 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
         circleOpacity = 0;
     }
 
+    // UPDATED: Tightened height (min-h-[300px]) and viewBox (-20 20 340 430) to remove vertical gap
     return (
-        <div className="w-full flex flex-col items-center justify-center relative min-h-[500px]">
-            <div className="relative w-[340px] h-[500px] flex items-center justify-center">
+        <div className="w-full flex flex-col items-center justify-center relative min-h-[300px]">
+            <div className="relative w-[300px] h-[380px] flex items-center justify-center">
                 
-                <svg viewBox="-40 -40 380 550" className="absolute inset-0 w-full h-full overflow-visible z-10 pointer-events-none">
+                {/* SVG viewBox cropped to content */}
+                <svg viewBox="-20 20 340 430" className="absolute inset-0 w-full h-full overflow-visible z-10 pointer-events-none">
                     <defs>
                         <filter id="neonGlowAV" x="-50%" y="-50%" width="200%" height="200%">
                             <feGaussianBlur stdDeviation="6" result="coloredBlur" />
@@ -259,19 +261,18 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
                     <path d={combinedPath} stroke={COLOR_GLASS} strokeWidth={STROKE_WIDTH} fill="none" strokeLinecap="round" />
                     
                     {/* === СТАРТОВЫЙ ШАР (БЕСШОВНЫЙ) === */}
-                    {/* Рендерится всегда, но управляется через animate для плавности */}
                     <MotionCircle 
                         cx={startNodeX} 
                         cy="380"
                         r={STROKE_WIDTH / 2}
-                        fill={COLOR_INHALE} // Всегда цвет вдоха, т.к. он актуален для старта
+                        fill={COLOR_INHALE} 
                         animate={{ 
                             opacity: circleOpacity, 
                             scale: circleScale,
                             filter: isReadyState ? `blur(${10 - readyProgress * 10}px)` : 'blur(0px)'
                         }}
                         transition={{ 
-                            duration: 0.1, // Быстрая реакция на смену фаз
+                            duration: 0.1, 
                             ease: "linear" 
                         }} 
                         style={{ filter: 'url(#neonGlowAV)', originX: '50%', originY: '50%' }}
@@ -287,7 +288,7 @@ const AnulomaVilomaInterface: React.FC<Props> = ({
                             stroke: activeColor,
                             pathLength: pathLength,
                             pathOffset: pathOffset,
-                            opacity: liquidOpacity // 0 в Ready, 1 в Inhale. Накладывается поверх шара.
+                            opacity: liquidOpacity 
                         }}
                         transition={{ 
                             duration: 0.1, 

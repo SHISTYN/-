@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 
@@ -66,12 +67,12 @@ const AppBackground: React.FC<Props> = ({ theme }) => {
                 />
             </div>
 
-            {/* --- LIGHT MODE: ZEN CLEAN --- */}
+            {/* --- LIGHT MODE: ZEN CLEAN (WARMER TINT) --- */}
             <div 
-                className={`absolute inset-0 bg-[#FAFAFA] transition-opacity duration-1000 ease-in-out ${theme === 'light' ? 'opacity-100' : 'opacity-0'}`}
+                className={`absolute inset-0 bg-[#F5F5F7] transition-opacity duration-1000 ease-in-out ${theme === 'light' ? 'opacity-100' : 'opacity-0'}`}
             >
                  <MotionDiv 
-                    animate={{ scale: [1, 1.05, 1], opacity: [0.4, 0.6, 0.4] }}
+                    animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
                     transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
                     className="absolute inset-0 opacity-40"
                     style={{
@@ -79,6 +80,8 @@ const AppBackground: React.FC<Props> = ({ theme }) => {
                          filter: 'blur(60px)',
                     }}
                  />
+                 {/* Warm ambient glow bottom right */}
+                 <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-amber-100/30 blur-[80px] rounded-full pointer-events-none"></div>
             </div>
 
             {/* Глобальный шум (Cinematic Grain) */}

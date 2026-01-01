@@ -1,16 +1,44 @@
+
 import React from 'react';
-import EntheoLogo from './EntheoLogo';
+import EntheoForest from './EntheoForest';
 
 const SplashScreen: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
     if (!isLoading) return null;
     
     return (
-        <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center transition-opacity duration-1000 animate-fade-in">
-            <div className="mb-8 transform scale-100 md:scale-125 transition-transform duration-700">
-                <EntheoLogo className="w-32 h-32 md:w-40 md:h-40" animated={true} />
+        <div className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center transition-opacity duration-1000 animate-fade-in overflow-hidden">
+            
+            {/* --- VISUAL LAYER: PIXEL FOREST --- */}
+            <div className="absolute inset-0 w-full h-full z-0">
+                <EntheoForest className="w-full h-full" />
+                
+                {/* Vignette for cinematic focus */}
+                <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/80 pointer-events-none"></div>
             </div>
-            <h1 className="text-3xl md:text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-zen-accent via-premium-purple to-premium-gold tracking-[0.2em] animate-pulse text-center px-4 uppercase">EntheoBreath</h1>
-            <p className="text-premium-purple/70 mt-4 text-[10px] md:text-xs font-bold uppercase tracking-[0.5em] text-center">Загрузка сознания...</p>
+
+            {/* --- UI LAYER: TYPOGRAPHY --- */}
+            <div className="relative z-10 flex flex-col items-center justify-end h-full pb-16 md:pb-24 space-y-4 pointer-events-none">
+                
+                {/* Main Title - Retro Glow */}
+                <h1 className="text-4xl md:text-6xl font-display font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 tracking-tight drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] text-center px-4">
+                    ENTHEOBREATH
+                </h1>
+
+                {/* Subtitle - Monospace for retro feel */}
+                <div className="flex flex-col items-center gap-4">
+                    <p className="text-cyan-500/80 text-[10px] md:text-xs font-mono font-bold uppercase tracking-[0.4em] text-center animate-pulse">
+                        ЗАГРУЗКА СОЗНАНИЯ...
+                    </p>
+                    
+                    {/* Pixel Loader Bar */}
+                    <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-cyan-500 animate-pulse"></div>
+                        <div className="w-2 h-2 bg-purple-500 animate-pulse [animation-delay:0.1s]"></div>
+                        <div className="w-2 h-2 bg-rose-500 animate-pulse [animation-delay:0.2s]"></div>
+                    </div>
+                </div>
+
+            </div>
         </div>
     );
 };

@@ -55,15 +55,15 @@ export const useAudioEngine = () => {
 
 // --- CRYSTAL BOWL CLASS (HYBRID ENGINE) ---
 class CrystalBowl {
-    // 1. Rubbing Engine (Continuous)
+    // 1. Rubbing Engine (Continuous Singing)
     private rubOsc: Tone.FMOscillator;
     private rubTremolo: Tone.Tremolo;
     private rubGain: Tone.Gain;
     
-    // 2. Striking Engine (Percussive)
+    // 2. Striking Engine (Percussive Ding)
     private strikeSynth: Tone.Synth;
     
-    // 3. Common
+    // 3. Common FX
     private panner: Tone.Panner;
     private filter: Tone.Filter;
     
@@ -73,24 +73,27 @@ class CrystalBowl {
     constructor(freq: number, destination: Tone.ToneAudioNode) {
         this.frequency = freq;
 
-        // --- COMMON FX ---
-        this.panner = new Tone.Panner(Math.random() * 1.4 - 0.7).connect(destination); // Random pan
-        this.filter = new Tone.Filter(3500, "lowpass", -12).connect(this.panner); // Warm glass filter
+        // --- SPATIAL & COLOR ---
+        // Random pan for immersive stereo field
+        this.panner = new Tone.Panner(Math.random() * 1.6 - 0.8).connect(destination); 
+        // Lowpass filter to keep it "Crystal" warm, removing digital harshness
+        this.filter = new Tone.Filter(3500, "lowpass", -12).connect(this.panner); 
 
-        // --- RUBBING SETUP ---
-        // FM Synthesis simulates the complex overtones of glass interference
+        // --- RUBBING ENGINE ---
+        // FM Synthesis simulates the complex interference of a singing bowl
+        // Harmonicity 1.002 creates the characteristic slow "wow-wow" beating
         this.rubOsc = new Tone.FMOscillator({
             frequency: freq,
             type: "sine",
             modulationType: "sine",
-            harmonicity: 1.002, // Slight detune creates the "singing" beating
+            harmonicity: 1.002, 
             modulationIndex: 0.5
         });
 
-        // Tremolo simulates the stick moving around the rim (Volume wobble)
+        // Tremolo simulates the hand moving around the rim (Amplitude Modulation)
         this.rubTremolo = new Tone.Tremolo({
             frequency: 0.8 + Math.random(), // Unique rotation speed per bowl
-            depth: 0.4,
+            depth: 0.4, // Subtle volume wobble
             spread: 0
         }).start();
 
@@ -103,17 +106,17 @@ class CrystalBowl {
         
         this.rubOsc.start();
 
-        // --- STRIKING SETUP ---
-        // Separate synth for the "Ding" sound (Soft Mallet)
+        // --- STRIKING ENGINE ---
+        // Separate synth for the "Ding" sound (Soft Mallet impact)
         this.strikeSynth = new Tone.Synth({
-            oscillator: { type: "sine" }, // Pure tone
+            oscillator: { type: "sine" }, // Pure tone for crystal
             envelope: { 
                 attack: 0.05, // Soft hit
-                decay: 3.0,   // Long ring
-                sustain: 0.05, 
-                release: 10   // Very long tail
+                decay: 4.0,   // Long ring
+                sustain: 0, 
+                release: 4.0   
             },
-            volume: -5
+            volume: -4 // Slightly quieter than full rub
         }).connect(this.filter);
     }
 
@@ -122,9 +125,9 @@ class CrystalBowl {
         if (this.isRubbing) return;
         this.isRubbing = true;
         
-        // Randomize dynamics slightly
-        this.rubOsc.modulationIndex.rampTo(1 + Math.random(), 5);
-        this.rubTremolo.frequency.rampTo(0.5 + Math.random() * 1.5, 10); // Change rotation speed
+        // Randomize dynamics slightly for organic feel
+        this.rubOsc.modulationIndex.rampTo(0.5 + Math.random() * 0.5, 6);
+        this.rubTremolo.frequency.rampTo(0.5 + Math.random() * 1.5, 10); 
         
         this.rubGain.gain.rampTo(0.2 + Math.random() * 0.1, fadeInTime); // Fade in
     }
@@ -138,8 +141,7 @@ class CrystalBowl {
 
     // "Ding" (Soft Strike)
     strike(velocity: number = 1) {
-        // Slight detune for realism on impact
-        const detune = (Math.random() - 0.5) * 5; 
+        // Slight detune randomization for realism on impact
         this.strikeSynth.triggerAttackRelease(this.frequency, 8, undefined, velocity);
     }
 
@@ -199,7 +201,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (isReady) return;
     await Tone.start();
     
-    // Compressor helps glue the layers together
+    // Compressor helps glue the layers together and prevents clipping
     const limiter = new Tone.Limiter(-1).toDestination();
     const master = new Tone.Gain(1).connect(limiter);
     masterGainRef.current = master;
@@ -275,7 +277,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  // --- CRYSTAL BOWLS: THE ORCHESTRA ---
+  // --- CRYSTAL BOWLS: THE ORCHESTRA (CONDUCTOR) ---
   const toggleCrystalModeHandler = async () => {
     await initializeAudio();
     
@@ -307,8 +309,9 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         Tone.Transport.start();
 
         const masterGain = new Tone.Gain(0).connect(masterGainRef.current!);
-        // Deep, expansive Cathedral Reverb
-        const reverb = new Tone.Reverb({ decay: 22, wet: 0.65, preDelay: 0.2 }).connect(masterGain);
+        
+        // Deep, expansive Cathedral Reverb (20s+ decay for deep immersion)
+        const reverb = new Tone.Reverb({ decay: 22, wet: 0.7, preDelay: 0.2 }).connect(masterGain);
         await reverb.generate();
 
         // Create the Bowl Orchestra (Solfeggio Scale)
@@ -319,23 +322,23 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // Every few seconds, makes a decision to change the soundscape
         const conductorLoop = Tone.Transport.scheduleRepeat((time) => {
             
-            // 1. Maintain Drones (Rubbing)
+            // 1. Maintain Singing Drones (Rubbing)
             // Ideally 2-3 bowls singing at once creates rich harmony
             const activeBowls = bowls.filter(b => b.isRubbing);
             
             if (activeBowls.length < 2) {
-                // Add a bowl
+                // Add a bowl if silence is too empty
                 const inactive = bowls.filter(b => !b.isRubbing);
                 if (inactive.length > 0) {
                     const next = inactive[Math.floor(Math.random() * inactive.length)];
                     next.startRub(Math.random() * 3 + 3); // 3-6s fade in
                 }
             } else if (activeBowls.length > 3) {
-                // Remove a bowl
+                // Remove a bowl if too cluttered
                 const toStop = activeBowls[Math.floor(Math.random() * activeBowls.length)];
                 toStop.stopRub(Math.random() * 4 + 4); // 4-8s fade out
             } else {
-                // Changeover (Crossfade) - 30% chance
+                // Changeover (Crossfade) - 30% chance to swap voices
                 if (Math.random() > 0.7) {
                     const toStop = activeBowls[0]; // Stop oldest/random
                     const inactive = bowls.filter(b => !b.isRubbing);
@@ -349,10 +352,11 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
             // 2. Random Strikes (Accents)
             // 40% chance to gently strike a bowl (can be active or inactive)
+            // This creates the "light tapping" effect requested
             if (Math.random() > 0.6) {
                 // Pick any bowl, maybe favour high ones for sparkles
                 const target = bowls[Math.floor(Math.random() * bowls.length)];
-                // Soft velocity for texture
+                // Soft velocity for gentle texture
                 const velocity = 0.2 + Math.random() * 0.4; 
                 
                 // Add delay so it doesn't happen exactly on the beat
@@ -362,9 +366,9 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         }, "4m"); // Check every 4 measures (approx 8-10s)
 
-        // Initial Start
-        bowls[0].startRub(2); // Start root note immediately
-        setTimeout(() => bowls[2].startRub(5), 2000); // Add 528hz shortly after
+        // Initial Start: Start root note immediately + one harmony
+        bowls[0].startRub(2); 
+        setTimeout(() => bowls[2].startRub(5), 2000); 
 
         masterGain.gain.rampTo(1, 3);
         

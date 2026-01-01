@@ -52,7 +52,7 @@ type ExecutionMode = 'timer' | 'stopwatch';
 type ViewState = 'library' | 'timer';
 
 const LoadingFallback = () => (
-  <div className="w-full h-full flex items-center justify-center min-h-[450px]">
+  <div className="w-full h-full flex items-center justify-center min-h-[280px]">
     <div className="w-6 h-6 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
   </div>
 );
@@ -378,7 +378,7 @@ const App: React.FC = () => {
   // --- RENDER ---
   return (
     // OPTIMIZATION: h-full + overflow-hidden on body ensures we control scroll areas
-    <div className="w-full flex flex-col h-full font-sans bg-slate-50 dark:bg-[#000000] text-zinc-900 dark:text-gray-100 transition-colors duration-500 overflow-hidden">
+    <div className="w-full flex flex-col h-full font-sans bg-zinc-50 dark:bg-[#000000] text-zinc-900 dark:text-gray-100 transition-colors duration-500 overflow-hidden">
       
       <SplashScreen isLoading={isLoadingApp} />
       <AppBackground theme={theme} />
@@ -432,8 +432,8 @@ const App: React.FC = () => {
                         )}
 
                         {/* The Visualizer */}
-                        {/* FIXED: Increased min-height to 450px to prevent layout shift when Anuloma loads */}
-                        <div className="relative z-10 w-full flex justify-center p-0 min-h-[450px]">
+                        {/* FIXED: Reduced min-height from 350px to 280px to remove excessive gap on mobile */}
+                        <div className="relative z-10 w-full flex justify-center p-0 min-h-[280px] items-end">
                             <Suspense fallback={<LoadingFallback />}>
                                 {isHolotropic ? (
                                     <div className="w-full h-[450px] flex flex-col items-center justify-center relative overflow-hidden">
@@ -486,7 +486,7 @@ const App: React.FC = () => {
 
                         {/* Controls */}
                         {!isWimHof && !isHolotropic && (
-                            <div className="w-full px-4 flex-shrink-0 relative z-10 pb-4 mt-4">
+                            <div className="w-full px-4 flex-shrink-0 relative z-10 pb-4 mt-0">
                                 <div className="max-w-md mx-auto flex flex-col gap-3">
                                     <div className="flex items-center justify-center gap-6">
                                         <button onClick={resetTimer} className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-white/10 flex items-center justify-center text-zinc-500 hover:text-black dark:text-gray-400 dark:hover:text-white"><i className="fas fa-redo text-sm"></i></button>
