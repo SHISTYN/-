@@ -103,7 +103,7 @@ const App: React.FC = () => {
   const [showMobileFaq, setShowMobileFaq] = useState(false);
 
   // Audio & Refs
-  const { soundMode, changeSoundMode, playSoundEffect, initAudio, playCountdownTick } = useAudioSystem();
+  const { soundMode, changeSoundMode, playSoundEffect, initAudio, playCountdownTick, playPhaseSound } = useAudioSystem();
   const requestRef = useRef<number | undefined>(undefined);
   const previousTimeRef = useRef<number | undefined>(undefined);
   const wakeLockRef = useRef<any>(null);
@@ -312,7 +312,10 @@ const App: React.FC = () => {
         default: return prev;
       }
 
-      if (nextPhase !== prev.currentPhase) playSoundEffect(soundMode);
+      // TRIGGER SOUND FOR NEW PHASE
+      if (nextPhase !== prev.currentPhase) {
+          playPhaseSound(nextPhase);
+      }
       
       if (nextPhase === BreathingPhase.Done) {
           saveSession({
@@ -334,7 +337,7 @@ const App: React.FC = () => {
           isPaused: shouldPause
       };
     });
-  }, [activePattern, rounds, soundMode, executionMode, playSoundEffect, saveSession]);
+  }, [activePattern, rounds, executionMode, playPhaseSound, saveSession]);
 
   const tick = useCallback((time: number) => {
     if (previousTimeRef.current !== undefined) {
@@ -342,14 +345,14 @@ const App: React.FC = () => {
       setTimerState(prev => {
         if (!prev.isActive || prev.isPaused || prev.currentPhase === BreathingPhase.Done) return prev;
         
-        // --- COUNTDOWN LOGIC ---
-        // Play tick at 3, 2, 1
+        // --- COUNTDOWN SOUND LOGIC ---
+        // Play specific sound at 3, 2, 1
         if (executionMode === 'timer' && prev.secondsRemaining > 0 && prev.secondsRemaining <= 3.1) {
             const currentSec = Math.ceil(prev.secondsRemaining);
             if (currentSec !== lastSecondRef.current) {
                 // Play for 3, 2, 1 (but not 0)
                 if (currentSec > 0 && currentSec <= 3) {
-                    playCountdownTick();
+                    playCountdownTick(currentSec);
                 }
                 lastSecondRef.current = currentSec;
             }
