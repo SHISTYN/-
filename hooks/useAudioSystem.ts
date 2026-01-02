@@ -6,6 +6,7 @@ import { BreathingPhase } from '../types';
 export type SoundMode = 'mute' | 'bell' | 'hang' | 'bowl' | 'rain' | 'om' | 'gong' | 'harp' | 'flute';
 
 export const useAudioSystem = () => {
+    // Legacy state, kept for compatibility with prop types
     const [soundMode, setSoundMode] = useState<SoundMode>('bell');
     
     // Shared Reverb Node (High quality spatializer)
@@ -32,7 +33,7 @@ export const useAudioSystem = () => {
 
         switch (phase) {
             case BreathingPhase.Inhale: {
-                // "Airy Swell"
+                // "Airy Swell" - Soft attack, opening filter, rising sensation
                 const synth = new Tone.PolySynth(Tone.FMSynth, {
                     harmonicity: 3,
                     modulationIndex: 3.5,
@@ -42,11 +43,12 @@ export const useAudioSystem = () => {
                     modulationEnvelope: { attack: 0.5, decay: 0, sustain: 1, release: 0.5 }
                 }).connect(volumeRef.current);
                 
+                // A Major Add9 chord for uplifting feeling
                 synth.triggerAttackRelease(["A3", "C#4", "E4", "B4"], "2n"); 
                 break;
             }
             case BreathingPhase.Exhale: {
-                // "Grounding Release"
+                // "Grounding Release" - Descending, warm, resolving
                 const synth = new Tone.PolySynth(Tone.AMSynth, {
                     harmonicity: 2,
                     oscillator: { type: "sine" },
@@ -55,11 +57,12 @@ export const useAudioSystem = () => {
                     modulationEnvelope: { attack: 0.5, decay: 0, sustain: 1, release: 0.5 }
                 }).connect(volumeRef.current);
 
+                // F Major 7 (Resolving)
                 synth.triggerAttackRelease(["F3", "A3", "C4", "E4"], "1n");
                 break;
             }
             case BreathingPhase.HoldIn: {
-                // "Suspension"
+                // "Suspension" - High, thin, static glass ping
                 const metal = new Tone.MetalSynth({
                     frequency: 200,
                     envelope: { attack: 0.005, decay: 1.4, release: 0.2 },
@@ -69,12 +72,13 @@ export const useAudioSystem = () => {
                     octaves: 1.5
                 }).connect(volumeRef.current);
                 
+                // Very soft high ping
                 metal.volume.value = -12;
                 metal.triggerAttackRelease("32n", undefined, 0.4);
                 break;
             }
             case BreathingPhase.HoldOut: {
-                // "Void"
+                // "Void" - Minimal low sine pulse (instead of stomping membrane)
                 const synth = new Tone.Synth({
                     oscillator: { type: "sine" },
                     envelope: { attack: 0.5, decay: 0.5, sustain: 0, release: 1 }
@@ -93,55 +97,53 @@ export const useAudioSystem = () => {
         }
     };
 
-    // --- COUNTDOWN SOUNDS (Apple-Style Taptic) ---
+    // --- COUNTDOWN SOUNDS (3... 2... 1...) ---
+    // UPDATED: "Glass Blip" instead of "Wood Stomp"
     const playCountdownTick = async (number: number) => {
         if (soundMode === 'mute') return;
         await initAudio();
-        
-        // Direct Destination for crispness (bypass reverb for 3, 2)
-        // Only use Reverb for "1/Go" to make it shine.
-        
+        if (!volumeRef.current) return;
+
+        // Apple-style: Clean, sine-based, snappy envelope, slight FM modulation for "glassiness"
+        const blip = new Tone.FMSynth({
+            harmonicity: 1.5, // Ratio creates a consonant, glassy bell tone
+            modulationIndex: 3, 
+            oscillator: { type: "sine" }, // Pure carrier
+            modulation: { type: "sine" }, // Pure modulator
+            envelope: { 
+                attack: 0.005, // Instant but smooth attack (no click)
+                decay: 0.15,   // Short decay (tight)
+                sustain: 0, 
+                release: 1 
+            },
+            modulationEnvelope: { 
+                attack: 0.001, 
+                decay: 0.1,    // Modulation fades fast leaving pure tone
+                sustain: 0, 
+                release: 0.1 
+            }
+        }).connect(volumeRef.current);
+
+        blip.volume.value = -4; // Balance volume
+
+        // Frequencies chosen for "Medical/Scientific" precision
         if (number > 1) {
-            // 3, 2: "Glass Tick" (High Pitch Sine Drop)
-            // This replicates the Taptic Engine feel: High freq, extremely fast decay.
-            const osc = new Tone.Oscillator().toDestination();
-            const env = new Tone.AmplitudeEnvelope({
-                attack: 0.001, // Instant
-                decay: 0.05,   // Very short (50ms)
-                sustain: 0,
-                release: 0.1
-            }).toDestination();
-            
-            osc.connect(env);
-            
-            osc.frequency.setValueAtTime(1200, Tone.now()); // Start high (Glassy)
-            osc.frequency.exponentialRampToValueAtTime(600, Tone.now() + 0.05); // Rapid drop creates the "Click"
-            
-            osc.start();
-            env.triggerAttackRelease(0.05);
-            osc.stop("+0.1");
-
+            // 3, 2: Neutral High "Blip" (G5 - 784Hz)
+            blip.triggerAttackRelease("G5", "32n");
         } else {
-            // 1: "Crystal Ping" (Start signal)
-            // Softer attack, longer tail, sent to Reverb
-            const synth = new Tone.Synth({
-                oscillator: { type: "sine" },
-                envelope: { 
-                    attack: 0.02, // Soft attack
-                    decay: 0.3,   // Ringing
-                    sustain: 0, 
-                    release: 1 
-                }
-            }).connect(volumeRef.current!); // Connect to Reverb path
-
-            synth.volume.value = -2;
-            synth.triggerAttackRelease("C6", "8n"); // High C
+            // 1: Accent High "Ping" (C6 - 1046Hz) - The "Ready" signal
+            // Slightly brighter modulation
+            blip.modulationIndex.value = 5;
+            blip.triggerAttackRelease("C6", "32n");
         }
     };
 
     const playSoundEffect = async (mode: SoundMode) => {
+        // Legacy wrapper for manual sound menu clicks
         if (mode === 'mute') return;
         await initAudio();
+        
+        // Simple preview sound logic
         const synth = new Tone.PolySynth().toDestination();
         synth.volume.value = -10;
         synth.triggerAttackRelease(["C5", "E5"], "8n");
