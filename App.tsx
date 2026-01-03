@@ -66,7 +66,6 @@ const App: React.FC = () => {
   const [activePattern, setActivePattern] = useState<BreathingPattern>(DEFAULT_PATTERNS[0]);
   const [rounds, setRounds] = useState<number>(0); 
   const [view, setView] = useState<ViewState>('library');
-  // UPDATED: Removed 'safety' from state type
   const [infoTab, setInfoTab] = useState<'about' | 'guide'>('about'); 
   const [isLoadingApp, setIsLoadingApp] = useState(true);
   const [executionMode, setExecutionMode] = useState<ExecutionMode>('timer');
@@ -90,7 +89,6 @@ const App: React.FC = () => {
 
   // Sync Timer Active state to Audio Engine (for Playback Mode)
   useEffect(() => {
-    // Only active if running AND not paused
     setTimerActive(timerState.isActive && !timerState.isPaused);
   }, [timerState.isActive, timerState.isPaused, setTimerActive]);
 
@@ -112,8 +110,9 @@ const App: React.FC = () => {
   // --- SWIPE GESTURE STATE ---
   const touchStartRef = useRef<{x: number, y: number} | null>(null);
 
-  // --- CRITICAL: AUTO-PAUSE ON VIEW CHANGE OR BACKGROUNDING ---
+  // --- AUTO-PAUSE LOGIC (REMOVED BACKGROUND PAUSE) ---
   useEffect(() => {
+      // Only pause if returning to library, NOT if switching tabs
       if (view === 'library') {
           setTimerState(prev => {
               if (prev.isActive) {
@@ -124,22 +123,7 @@ const App: React.FC = () => {
       }
   }, [view]);
 
-  useEffect(() => {
-      const handleVisibilityChange = () => {
-          if (document.hidden) {
-              setTimerState(prev => {
-                  if (prev.isActive && !prev.isPaused) {
-                      return { ...prev, isPaused: true };
-                  }
-                  return prev;
-              });
-          }
-      };
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-  // --- INIT LOGIC (PATH PARSING) ---
+  // --- INIT LOGIC ---
   useEffect(() => {
     try {
       const path = window.location.pathname.replace(/^\/|\/$/g, '').toLowerCase();
@@ -162,7 +146,6 @@ const App: React.FC = () => {
     } catch (e) { console.warn("URL path error:", e); }
   }, []);
 
-  // --- URL UPDATING (PATH) ---
   useEffect(() => {
       try {
           if (window.location.protocol === 'blob:') return;
@@ -216,7 +199,6 @@ const App: React.FC = () => {
       }
   };
 
-  // --- WAKE LOCK ---
   useEffect(() => {
     const requestWakeLock = async () => {
       if ('wakeLock' in navigator && document.visibilityState === 'visible') {
@@ -237,7 +219,7 @@ const App: React.FC = () => {
     return () => { releaseWakeLock(); };
   }, [timerState.isActive, timerState.isPaused]);
 
-  // --- SWIPE HANDLERS ---
+  // --- SWIPE ---
   const handleTouchStart = (e: React.TouchEvent) => {
       touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
@@ -249,10 +231,8 @@ const App: React.FC = () => {
       const diffX = touchEnd.x - touchStartRef.current.x;
       const diffY = touchEnd.y - touchStartRef.current.y;
 
-      // Logic: Horizontal swipe > 100px, minimal vertical movement
       if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 100) {
           if (diffX > 0) {
-              // Swipe Right -> Go Back to Library
               setView('library');
           }
       }
@@ -312,7 +292,6 @@ const App: React.FC = () => {
         default: return prev;
       }
 
-      // TRIGGER SOUND FOR NEW PHASE
       if (nextPhase !== prev.currentPhase) {
           playPhaseSound(nextPhase);
       }
@@ -345,19 +324,15 @@ const App: React.FC = () => {
       setTimerState(prev => {
         if (!prev.isActive || prev.isPaused || prev.currentPhase === BreathingPhase.Done) return prev;
         
-        // --- COUNTDOWN SOUND LOGIC ---
-        // Play specific sound at 3, 2, 1
         if (executionMode === 'timer' && prev.secondsRemaining > 0 && prev.secondsRemaining <= 3.1) {
             const currentSec = Math.ceil(prev.secondsRemaining);
             if (currentSec !== lastSecondRef.current) {
-                // Play for 3, 2, 1 (but not 0)
                 if (currentSec > 0 && currentSec <= 3) {
                     playCountdownTick(currentSec);
                 }
                 lastSecondRef.current = currentSec;
             }
         } else {
-            // Reset ref if we are not in countdown zone
             lastSecondRef.current = -1;
         }
 
@@ -395,11 +370,9 @@ const App: React.FC = () => {
         }, 100);
     } else {
         if (!timerState.isActive && timerState.currentPhase === BreathingPhase.Ready) {
-            // First Start
             setTimerState(prev => ({ ...prev, isActive: true, isPaused: false }));
             setZenMode(true);
         } else {
-            // Pause/Resume
             setTimerState(prev => ({ ...prev, isPaused: !prev.isPaused }));
         }
     }
@@ -418,10 +391,9 @@ const App: React.FC = () => {
     });
   };
 
-  // --- CRITICAL FIX 1: HANDLE PATTERN CHANGE WITH RESET ---
   const handlePatternChange = (newPattern: BreathingPattern) => {
       setActivePattern(newPattern);
-      resetTimer(); // Always reset rounds and time when controls change
+      resetTimer(); 
   };
 
   const handleDeepAnalysis = async () => {
@@ -453,7 +425,6 @@ const App: React.FC = () => {
       }
       setRounds(p.mode === 'wim-hof' ? 3 : 12); 
       resetTimer();
-      // FIX: Always start with Zen Mode OFF so the Sidebar (Overview) is visible
       setZenMode(false);
   };
 
@@ -483,16 +454,11 @@ const App: React.FC = () => {
   const isHolotropic = activePattern.id === 'holotropic';
   const currentPatternHistory = history.filter(h => h.patternId === activePattern.id).slice(0, 10);
 
-  // VISIBILITY LOGIC
   const isSetupControlsVisible = !timerState.isActive || timerState.isPaused;
-  const isBigPlayButtonVisible = !timerState.isActive && timerState.currentPhase === BreathingPhase.Ready;
-  
-  // BUTTON ICON LOGIC
   const showPlayIcon = !timerState.isActive || timerState.isPaused || timerState.currentPhase === BreathingPhase.Done;
 
-  // --- TIME CALCULATIONS FOR HUD ---
   const calculateRemainingTime = () => {
-      if (rounds === 0) return -1; // Infinite
+      if (rounds === 0) return -1;
       const cycleDuration = activePattern.inhale + activePattern.holdIn + activePattern.exhale + activePattern.holdOut;
       const totalDuration = cycleDuration * rounds;
       const remaining = Math.max(0, totalDuration - timerState.totalSecondsElapsed);
@@ -512,15 +478,12 @@ const App: React.FC = () => {
         <AnalysisModal isOpen={isAnalysisOpen} onClose={() => setAnalysisOpen(false)} title={`AI Анализ: ${activePattern.name}`} content={analysisContent} isLoading={isAnalyzing} />
       </Suspense>
 
-      {/* HEADER */}
       <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ease-in-out transform ${view === 'timer' ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
         <Header view={view} setView={setView} theme={theme} toggleTheme={toggleTheme} deferredPrompt={deferredPrompt} handleInstallClick={handleInstallClick} soundMode={soundMode} changeSoundMode={changeSoundMode} handleShare={handleShare} setShowMobileFaq={setShowMobileFaq} />
       </div>
 
-      {/* MAIN CONTENT AREA */}
       <main className="flex-1 flex flex-col w-full relative z-10 overflow-hidden h-full pt-safe">
         
-        {/* --- LIBRARY VIEW --- */}
         {view === 'library' && (
             <div className="flex-1 overflow-y-auto custom-scrollbar alive-scroll pt-24 pb-safe">
                 <Suspense fallback={<LoadingFallback />}>
@@ -529,7 +492,6 @@ const App: React.FC = () => {
             </div>
         )}
 
-        {/* --- TIMER VIEW --- */}
         {view === 'timer' && (
             <div 
                 className="w-full h-full flex flex-col lg:flex-row relative"
@@ -548,7 +510,6 @@ const App: React.FC = () => {
                 >
                     <div className="w-full h-full lg:w-[420px] overflow-hidden">
                         <Suspense fallback={<div className="p-10 text-center opacity-50">Загрузка...</div>}>
-                            {/* FIX: PASSED onStart TO TOGGLE ZEN MODE ON MOBILE */}
                             <TimerSidebar 
                                 activePattern={activePattern}
                                 setView={setView}
@@ -565,43 +526,34 @@ const App: React.FC = () => {
                 {/* 2. CENTER STAGE */}
                 <div className="flex-1 h-full flex flex-col relative z-10 overflow-hidden">
                     
-                    {/* Background Gradient */}
                     <div className={`absolute inset-0 transition-opacity duration-1000 z-0 pointer-events-none opacity-30`} style={{ background: 'radial-gradient(circle at center, rgba(34, 211, 238, 0.15) 0%, rgba(0,0,0,0) 70%)' }}></div>
                     
-                    {/* GLOBAL MOBILE SETTINGS BUTTON (Top-Left) */}
                     {isZenMode && (
                         <div className="lg:hidden absolute top-4 left-4 z-50">
                             <button 
                                 onClick={() => setZenMode(false)}
-                                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shadow-lg active:scale-90"
+                                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
                             >
                                 <SlidersHorizontal size={18} />
                             </button>
                         </div>
                     )}
 
-                    {/* Content Wrapper - SCROLLABLE (FLEX COL) */}
-                    {/* CRITICAL FIX: Changed items-center to items-stretch (or remove items-) to fix landscape scroll clipping */}
                     <div className="flex-1 w-full flex flex-col p-4 relative z-10 overflow-y-auto custom-scrollbar">
 
-                        {/* A. TOP HUD (ELAPSED | REMAINING) */}
-                        {/* REMOVED FOR WIM HOF MODE to prevent clutter */}
+                        {/* A. TOP HUD (Floating Island) */}
                         {!isWimHof && (
                             <div className={`
                                 relative z-30 mb-2 mt-4 shrink-0 self-center
                                 transition-all duration-500 ease-out
                             `}>
-                                <div className="flex items-center gap-0 bg-black/60 backdrop-blur-3xl rounded-full border border-white/10 shadow-lg overflow-hidden">
-                                    
-                                    {/* Elapsed Time */}
+                                <div className="flex items-center gap-0 bg-black/60 backdrop-blur-3xl rounded-full border border-white/10 shadow-[0_0_20px_-5px_rgba(0,0,0,0.5)] overflow-hidden">
                                     <div className="flex items-center gap-2 px-5 py-2.5 border-r border-white/10">
                                         <Timer size={12} className="text-zinc-500" />
                                         <span className="text-sm font-mono font-bold text-zinc-300">
                                             {formatDuration(timerState.totalSecondsElapsed)}
                                         </span>
                                     </div>
-
-                                    {/* Remaining Time */}
                                     <div className="flex items-center gap-2 px-5 py-2.5">
                                         <Hourglass 
                                             size={12} 
@@ -613,12 +565,11 @@ const App: React.FC = () => {
                                             </span>
                                         )}
                                     </div>
-
                                 </div>
                             </div>
                         )}
 
-                        {/* B. VISUALIZER (TOP/CENTER) */}
+                        {/* B. VISUALIZER */}
                         <div className="flex-1 w-full flex items-center justify-center min-h-[320px] mb-4 shrink-0">
                             <Suspense fallback={<LoadingFallback />}>
                                 {isHolotropic ? (
@@ -674,37 +625,47 @@ const App: React.FC = () => {
                             </Suspense>
                         </div>
 
-                        {/* C. BOTTOM STACK - SCROLLABLE */}
-                        {/* UPDATE: Increased max-w for Desktop to allow 3-column inputs */}
+                        {/* C. BOTTOM STACK - AIR UI (FLOATING ISLANDS) */}
                         <div className="w-full max-w-md lg:max-w-2xl flex flex-col gap-6 mt-4 mb-safe shrink-0 pb-8 transition-all duration-300 self-center">
                             
-                            {/* 1. DOCK (FIXED POSITION RELATIVE TO VISUALIZER) */}
-                            {/* HIDE DOCK IF WIM HOF MODE IS ACTIVE */}
+                            {/* 1. DOCK (FLOATING BUTTONS) */}
+                            {/* Removed container background for "Air" feel */}
                             {!isWimHof && (
-                                <div className="flex justify-center transition-all duration-300 relative z-20">
-                                    <div className="flex items-center gap-6 p-3 bg-black/90 backdrop-blur-3xl border border-white/10 rounded-3xl shadow-2xl ring-1 ring-white/5">
-                                        <button onClick={resetTimer} className="w-14 h-14 flex items-center justify-center text-zinc-500 hover:text-white transition-colors" title="Сброс"><RotateCcw size={24} /></button>
-                                        
-                                        {/* MAIN ACTION BUTTON */}
-                                        <button 
-                                            onClick={toggleTimer} 
-                                            className="w-24 h-16 rounded-2xl flex items-center justify-center text-black bg-white shadow-lg transition-transform active:scale-95"
-                                        >
-                                            {showPlayIcon ? <Play size={28} fill="black" className="ml-1" /> : <Pause size={28} fill="black" />}
-                                        </button>
+                                <div className="flex justify-center transition-all duration-300 relative z-20 gap-6">
+                                    {/* RESET */}
+                                    <button 
+                                        onClick={resetTimer} 
+                                        className="w-14 h-14 rounded-full bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-[0_0_15px_-5px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_-5px_rgba(255,255,255,0.3)] hover:border-white/20 active:scale-95" 
+                                        title="Сброс"
+                                    >
+                                        <RotateCcw size={22} />
+                                    </button>
+                                    
+                                    {/* MAIN ACTION - GLOWING ISLAND */}
+                                    <button 
+                                        onClick={toggleTimer} 
+                                        className="w-24 h-16 rounded-2xl flex items-center justify-center bg-white text-black shadow-[0_0_40px_-5px_rgba(255,255,255,0.4)] hover:shadow-[0_0_50px_0px_rgba(255,255,255,0.6)] transition-all active:scale-95 border-2 border-white/50"
+                                    >
+                                        {showPlayIcon ? <Play size={32} fill="black" className="ml-1" /> : <Pause size={32} fill="black" />}
+                                    </button>
 
-                                        <button onClick={() => setZenMode(!isZenMode)} className="w-14 h-14 flex items-center justify-center text-zinc-500 hover:text-white transition-colors" title={isZenMode ? "Показать меню" : "Дзен режим"}>{isZenMode ? <Minimize2 size={24} /> : <Maximize2 size={24} />}</button>
-                                    </div>
+                                    {/* ZEN MODE */}
+                                    <button 
+                                        onClick={() => setZenMode(!isZenMode)} 
+                                        className="w-14 h-14 rounded-full bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-all shadow-[0_0_15px_-5px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_-5px_rgba(255,255,255,0.3)] hover:border-white/20 active:scale-95"
+                                        title={isZenMode ? "Показать меню" : "Дзен режим"}
+                                    >
+                                        {isZenMode ? <Minimize2 size={22} /> : <Maximize2 size={22} />}
+                                    </button>
                                 </div>
                             )}
 
-                            {/* 2. CONTROLS (SLIDE IN/OUT BELOW DOCK) */}
+                            {/* 2. CONTROLS (SLIDE IN/OUT) */}
                             <div className={`transition-all duration-500 ease-in-out w-full overflow-hidden ${isSetupControlsVisible ? 'opacity-100 max-h-[600px]' : 'opacity-0 max-h-0'}`}>
                                 {!isWimHof && !isHolotropic && (
                                     <div className="flex flex-col gap-6 pt-2">
                                         {!isManual && executionMode === 'timer' && (
                                             <Suspense fallback={null}>
-                                                {/* FIX 2: Pass handlePatternChange wrapper to reset timer on updates */}
                                                 <Controls 
                                                     pattern={{...activePattern, mode: activePattern.mode}} 
                                                     onChange={handlePatternChange} 
@@ -718,17 +679,17 @@ const App: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* 3. HISTORY - ALWAYS BOTTOM */}
+                            {/* 3. HISTORY */}
                             {currentPatternHistory.length > 0 && (
-                                <div className="w-full bg-zinc-50 dark:bg-white/5 border border-zinc-200 dark:border-white/5 rounded-3xl p-5 mt-2">
-                                    <div className="flex items-center justify-between mb-3 border-b border-zinc-200 dark:border-white/5 pb-2">
-                                        <div className="flex items-center gap-2 text-zinc-500 dark:text-gray-400"><History size={14} /><span className="text-[10px] font-bold uppercase tracking-widest">История</span></div>
+                                <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-5 mt-2 backdrop-blur-md shadow-lg">
+                                    <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                                        <div className="flex items-center gap-2 text-zinc-400"><History size={14} /><span className="text-[10px] font-bold uppercase tracking-widest">История</span></div>
                                     </div>
                                     <div className="space-y-2 max-h-[160px] overflow-y-auto custom-scrollbar">
                                         {currentPatternHistory.map((item) => (
-                                            <div key={item.id} className="flex items-center justify-between p-2 rounded-xl bg-white/50 dark:bg-white/5">
-                                                <span className="text-xs font-bold text-zinc-800 dark:text-gray-200">{formatDate(item.date)}</span>
-                                                <span className="text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400">{formatDuration(item.durationSeconds)}</span>
+                                            <div key={item.id} className="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                                                <span className="text-xs font-bold text-zinc-200">{formatDate(item.date)}</span>
+                                                <span className="text-xs font-mono font-bold text-cyan-400">{formatDuration(item.durationSeconds)}</span>
                                             </div>
                                         ))}
                                     </div>
